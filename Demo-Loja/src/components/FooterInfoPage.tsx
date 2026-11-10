@@ -1,6 +1,6 @@
-import { ArrowLeft, ArrowRight, BadgeCheck, BriefcaseBusiness, ChevronDown, CircleHelp, Clock3, Facebook, Headphones, Instagram, Mail, MapPin, MessageCircle, PackageCheck, ShieldCheck, ShoppingBag, Truck, Youtube } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BadgeCheck, BriefcaseBusiness, CircleHelp, Headphones, MessageCircle, PackageCheck, ShieldCheck, ShoppingBag, Truck } from 'lucide-react';
 
-type Props = { topic: string; onBack: () => void };
+type Props = { topic: string; onBack: () => void; onNavigate: (topic: string) => void };
 type Section = { title: string; body: string; bullets?: string[] };
 
 const contentByTopic: Record<string, { eyebrow: string; title: string; intro: string; icon: typeof ShoppingBag; sections: Section[]; note?: string }> = {
@@ -109,7 +109,7 @@ const contentByTopic: Record<string, { eyebrow: string; title: string; intro: st
 
 const quickLinks = ['Sobre Nós', 'Trabalhe Conosco', 'Política de Privacidade', 'Termos de Uso', 'Central de Ajuda', 'Trocas e Devoluções', 'Rastreamento', 'FAQ'];
 
-export function FooterInfoPage({ topic, onBack }: Props) {
+export function FooterInfoPage({ topic, onBack, onNavigate }: Props) {
   const page = contentByTopic[topic] ?? contentByTopic['Central de Ajuda'];
   const Icon = page.icon;
   return (
@@ -139,7 +139,7 @@ export function FooterInfoPage({ topic, onBack }: Props) {
         <aside className="h-fit rounded-2xl border border-slate-200 bg-slate-50 p-5 lg:sticky lg:top-28">
           <p className="mb-4 text-xs font-black uppercase tracking-[0.16em] text-slate-400">Navegação</p>
           <nav className="space-y-1">
-            {quickLinks.map((link) => <button key={link} type="button" onClick={() => window.dispatchEvent(new CustomEvent('techstore-info-navigate', { detail: link }))} className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${topic === link ? 'bg-orange-50 text-orange-700' : 'text-slate-600 hover:bg-white hover:text-slate-950'}`}>{link}{topic === link && <span className="h-1.5 w-1.5 rounded-full bg-orange-500"/>}</button>)}
+            {quickLinks.map((link) => <button key={link} type="button" onClick={() => onNavigate(link)} className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${topic === link ? 'bg-orange-50 text-orange-700' : 'text-slate-600 hover:bg-white hover:text-slate-950'}`}>{link}{topic === link && <span className="h-1.5 w-1.5 rounded-full bg-orange-500"/>}</button>)}
           </nav>
           <div className="mt-6 rounded-xl bg-slate-900 p-4 text-white"><div className="mb-2 flex items-center gap-2 text-sm font-bold"><Headphones size={16} className="text-orange-400"/> Precisa de ajuda?</div><p className="text-xs leading-5 text-slate-400">Consulte a central de ajuda para entender os recursos desta demonstração.</p></div>
         </aside>
