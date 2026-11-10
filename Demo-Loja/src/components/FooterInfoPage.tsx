@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, BadgeCheck, BriefcaseBusiness, CircleHelp, Headphones, MessageCircle, PackageCheck, ShieldCheck, ShoppingBag, Truck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BadgeCheck, Briefcase, HelpCircle, Headphones, MessageCircle, PackageCheck, ShieldCheck, ShoppingBag, Truck } from 'lucide-react';
 
 type Props = { topic: string; onBack: () => void; onNavigate: (topic: string) => void };
 type Section = { title: string; body: string; bullets?: string[] };
