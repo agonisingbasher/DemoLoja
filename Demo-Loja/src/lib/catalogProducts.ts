@@ -25,7 +25,7 @@ export const catalogProducts = [
     id: 'local-mouse-razer-basilisk', name: 'Mouse Gamer Razer Basilisk V3', description: 'Mouse gamer ergonômico com sensor óptico de alta precisão e iluminação RGB.',
     details: 'Mouse gamer com formato ergonômico para destros, sensor óptico de alta precisão, roda de rolagem configurável e iluminação Razer Chroma RGB.',
     features: ['Sensor óptico de até 26.000 DPI', '11 botões programáveis', 'Razer Chroma RGB', 'Roda de rolagem inteligente'],
-    price: 499.90, original_price: 599.90, image_url: 'https://images.unsplash.com/photo-1527814050087-3793815479db?auto=format&fit=crop&w=900&q=85',
+    price: 499.90, original_price: 599.90, image_url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Razer_Basilisk_V3_1.jpg',
     category_id: 'perifericos', stock: 15, rating: 4.6, featured: true, created_at: new Date().toISOString(),
   },
   {
