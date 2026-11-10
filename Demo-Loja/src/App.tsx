@@ -248,8 +248,8 @@ export default function App() {
       )}
 
       {infoTopic && (
-        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setInfoTopic(null); }}>
-          <section role="dialog" aria-modal="true" aria-labelledby="footer-info-title" className="w-full max-w-lg rounded-3xl bg-white p-7 shadow-2xl">
+        <div className="fixed inset-0 z-[95] overflow-y-auto bg-slate-50">
+          <section aria-labelledby="footer-info-title" className="min-h-screen bg-slate-50">
             <div className="flex items-start justify-between gap-4">
               <div><p className="text-xs font-bold uppercase tracking-widest text-orange-600">TechStore • Informações</p><h2 id="footer-info-title" className="mt-2 text-2xl font-black text-slate-900">{infoTopic}</h2></div>
               <button type="button" onClick={() => setInfoTopic(null)} aria-label="Fechar" className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X /></button>
