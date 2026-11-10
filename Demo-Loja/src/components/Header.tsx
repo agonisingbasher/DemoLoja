@@ -1,103 +1,71 @@
-import { ShoppingCart, Search, Menu, User } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { getCartItems } from '../services/cartService';
+import { ShoppingCart, Search, Menu, User, X } from 'lucide-react';
+import { useState } from 'react';
 
 interface HeaderProps {
   onCartClick: () => void;
   cartItemsCount: number;
   onLoginClick: () => void;
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
 }
 
-export const Header = ({ onCartClick, cartItemsCount, onLoginClick }: HeaderProps) => {
+export const Header = ({ onCartClick, cartItemsCount, onLoginClick, searchTerm, onSearchChange }: HeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  const searchBox = (mobile = false) => (
+    <label className={`flex items-center gap-2 rounded-lg bg-white px-4 py-2 ${mobile ? 'w-full' : 'w-80'}`}>
+      <Search className="shrink-0 text-gray-400" size={19} />
+      <input
+        type="search"
+        value={searchTerm}
+        onChange={(event) => onSearchChange(event.target.value)}
+        placeholder="Buscar produtos..."
+        aria-label="Buscar produtos"
+        className="min-w-0 flex-1 text-gray-700 outline-none"
+      />
+      {searchTerm && <button type="button" onClick={() => onSearchChange('')} aria-label="Limpar busca" className="text-gray-400 hover:text-gray-700"><X size={16} /></button>}
+    </label>
+  );
+
   return (
-    <header className="bg-gradient-to-r from-orange-600 to-orange-500 shadow-lg sticky top-0 z-50">
+    <header className="sticky top-0 z-50 bg-gradient-to-r from-orange-600 to-orange-500 shadow-lg">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between py-4">
-          <div className="flex items-center space-x-8">
-            <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                <ShoppingCart className="text-orange-600" size={24} />
-              </div>
-              <h1 className="text-2xl font-bold text-white">TechStore</h1>
-            </div>
+        <div className="flex items-center justify-between gap-4 py-4">
+          <a href="#topo" className="flex shrink-0 items-center gap-2" aria-label="TechStore - início">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white"><ShoppingCart className="text-orange-600" size={24} /></span>
+            <span className="text-2xl font-bold text-white">TechStore</span>
+          </a>
 
-            <nav className="hidden md:flex items-center space-x-6">
-              <a href="#" className="text-white hover:text-orange-100 transition font-medium">
-                Ofertas
-              </a>
-              <a href="#" className="text-white hover:text-orange-100 transition font-medium">
-                Consoles
-              </a>
-              <a href="#" className="text-white hover:text-orange-100 transition font-medium">
-                Periféricos
-              </a>
-              <a href="#" className="text-white hover:text-orange-100 transition font-medium">
-                Áudio
-              </a>
-            </nav>
-          </div>
+          <nav className="hidden items-center gap-6 lg:flex">
+            <a href="#catalogo" className="font-medium text-white transition hover:text-orange-100">Ofertas</a>
+            <a href="#catalogo" onClick={() => onSearchChange('Xbox')} className="font-medium text-white transition hover:text-orange-100">Consoles</a>
+            <a href="#catalogo" onClick={() => onSearchChange('Mouse')} className="font-medium text-white transition hover:text-orange-100">Periféricos</a>
+            <a href="#catalogo" onClick={() => onSearchChange('Controle')} className="font-medium text-white transition hover:text-orange-100">Acessórios</a>
+          </nav>
 
-          <div className="flex items-center space-x-4">
-            <div className="hidden lg:flex items-center bg-white rounded-lg px-4 py-2 w-96">
-              <input
-                type="text"
-                placeholder="Buscar produtos..."
-                className="flex-1 outline-none text-gray-700"
-              />
-              <Search className="text-gray-400" size={20} />
-            </div>
+          <div className="hidden flex-1 justify-center xl:flex">{searchBox()}</div>
 
-            <button
-              className="hidden md:flex items-center space-x-2 bg-orange-700 hover:bg-orange-800 text-white px-4 py-2 rounded-lg transition"
-              onClick={onLoginClick}
-            >
-              <User size={20} />
-              <span>Entrar</span>
+          <div className="flex shrink-0 items-center gap-3">
+            <button onClick={onLoginClick} className="hidden items-center gap-2 rounded-lg bg-orange-700 px-4 py-2 text-white transition hover:bg-orange-800 md:flex">
+              <User size={19} /><span>Entrar</span>
             </button>
-
-            <button
-              onClick={onCartClick}
-              className="relative bg-orange-700 hover:bg-orange-800 text-white p-2 rounded-lg transition"
-            >
+            <button onClick={onCartClick} aria-label={`Abrir carrinho, ${cartItemsCount} itens`} className="relative rounded-lg bg-orange-700 p-2 text-white transition hover:bg-orange-800">
               <ShoppingCart size={24} />
-              {cartItemsCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                  {cartItemsCount}
-                </span>
-              )}
+              {cartItemsCount > 0 && <span className="absolute -right-2 -top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">{cartItemsCount}</span>}
             </button>
-
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden text-white"
-            >
-              <Menu size={24} />
+            <button onClick={() => setIsMenuOpen((open) => !open)} aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={isMenuOpen} className="text-white md:hidden">
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
-
         {isMenuOpen && (
-          <nav className="md:hidden pb-4 space-y-2">
-            <a href="#" className="block text-white hover:text-orange-100 transition py-2">
-              Ofertas
-            </a>
-            <a href="#" className="block text-white hover:text-orange-100 transition py-2">
-              Consoles
-            </a>
-            <a href="#" className="block text-white hover:text-orange-100 transition py-2">
-              Periféricos
-            </a>
-            <a href="#" className="block text-white hover:text-orange-100 transition py-2">
-              Áudio
-            </a>
-            <div className="pt-2">
-              <input
-                type="text"
-                placeholder="Buscar produtos..."
-                className="w-full px-4 py-2 rounded-lg outline-none"
-              />
+          <nav className="space-y-3 pb-4 md:hidden">
+            {searchBox(true)}
+            <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium text-white">
+              <a href="#catalogo" onClick={() => setIsMenuOpen(false)}>Ofertas</a>
+              <a href="#catalogo" onClick={() => { onSearchChange('Xbox'); setIsMenuOpen(false); }}>Consoles</a>
+              <a href="#catalogo" onClick={() => { onSearchChange('Mouse'); setIsMenuOpen(false); }}>Periféricos</a>
+              <a href="#catalogo" onClick={() => { onSearchChange('Controle'); setIsMenuOpen(false); }}>Acessórios</a>
             </div>
           </nav>
         )}
