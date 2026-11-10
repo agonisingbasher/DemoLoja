@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { ArrowRight, CheckCircle2, Heart, Minus, Plus, Search, ShieldCheck, ShoppingCart, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, Heart, Minus, Plus, Search, ShieldCheck, ShoppingCart, Trash2, X } from 'lucide-react';
 import { CategoryFilter } from './components/CategoryFilter';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
@@ -39,6 +39,9 @@ export default function App() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [notice, setNotice] = useState('');
   const [orderCode, setOrderCode] = useState('');
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [infoTopic, setInfoTopic] = useState<string | null>(null);
+  const selectedProduct = products.find((product) => product.id === selectedProductId);
 
   useEffect(() => { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }, [cart]);
   useEffect(() => { localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites)); }, [favorites]);
@@ -178,7 +181,7 @@ export default function App() {
                     >
                       <Heart size={18} className={favorites.includes(product.id) ? 'fill-current' : ''} />
                     </button>
-                    <ProductCard product={product} onAddToCart={addToCart} />
+                    <ProductCard product={product} onAddToCart={addToCart} onViewDetails={(id) => { setSelectedProductId(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
                   </div>
                 ))}
               </div>
@@ -204,7 +207,67 @@ export default function App() {
           <a href="#catalogo" className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-3 font-bold text-white transition hover:bg-orange-600">Explorar produtos <ArrowRight size={18} /></a>
         </div>
       </section>
-      <Footer />
+      <Footer onInfoClick={setInfoTopic} />
+
+
+      {selectedProduct && (
+        <div className="fixed inset-0 z-[65] overflow-y-auto bg-slate-50">
+          <div className="min-h-screen">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-4 shadow-sm backdrop-blur">
+              <button type="button" onClick={() => setSelectedProductId(null)} className="inline-flex items-center gap-2 font-semibold text-slate-700 hover:text-orange-600"><ArrowLeft size={20} /> Voltar à loja</button>
+              <span className="font-black text-orange-600">TechStore</span>
+            </div>
+            <main className="container mx-auto grid max-w-6xl gap-10 px-4 py-10 md:grid-cols-2 md:py-16">
+              <div className="flex min-h-[320px] items-center justify-center rounded-3xl bg-white p-6 shadow-sm md:min-h-[520px]">
+                <img src={selectedProduct.image_url || 'https://placehold.co/800x800?text=TechStore'} alt={selectedProduct.name} onError={(event) => { event.currentTarget.src = 'https://placehold.co/800x800?text=Imagem+indisponivel'; }} className="max-h-[480px] w-full object-contain" />
+              </div>
+              <div className="flex flex-col justify-center">
+                <p className="text-sm font-bold uppercase tracking-[0.2em] text-orange-600">Detalhes do produto</p>
+                <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">{selectedProduct.name}</h1>
+                <div className="mt-4 flex items-center gap-2 text-amber-500"><span>★★★★★</span><span className="text-sm font-semibold text-slate-600">{selectedProduct.rating.toFixed(1)} / 5.0</span></div>
+                <p className="mt-6 text-lg leading-8 text-slate-600">{selectedProduct.details || selectedProduct.description}</p>
+                <div className="mt-7 rounded-2xl bg-white p-5 shadow-sm">
+                  {selectedProduct.original_price && <p className="text-sm text-slate-400 line-through">{formatPrice(selectedProduct.original_price)}</p>}
+                  <p className="text-4xl font-black text-orange-600">{formatPrice(selectedProduct.price)}</p>
+                  <p className={`mt-2 text-sm font-semibold ${selectedProduct.stock > 0 ? 'text-emerald-600' : 'text-red-600'}`}>{selectedProduct.stock > 0 ? `Em estoque: ${selectedProduct.stock} unidade(s)` : 'Produto esgotado'}</p>
+                  <button type="button" disabled={selectedProduct.stock <= 0} onClick={() => addToCart(selectedProduct.id)} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-6 py-4 font-bold text-white transition hover:bg-orange-700 disabled:bg-slate-300"><ShoppingCart size={20} /> Adicionar ao carrinho</button>
+                </div>
+                {selectedProduct.features?.length ? (
+                  <div className="mt-8">
+                    <h2 className="text-lg font-bold text-slate-900">Características</h2>
+                    <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                      {selectedProduct.features.map((feature) => <li key={feature} className="flex items-start gap-2 text-sm text-slate-600"><CheckCircle2 size={17} className="mt-0.5 shrink-0 text-emerald-500" />{feature}</li>)}
+                    </ul>
+                  </div>
+                ) : null}
+                <p className="mt-8 text-xs leading-5 text-slate-400">Produto e valores ilustrativos. Esta loja é uma demonstração e não processa pagamentos reais.</p>
+              </div>
+            </main>
+          </div>
+        </div>
+      )}
+
+      {infoTopic && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setInfoTopic(null); }}>
+          <section role="dialog" aria-modal="true" aria-labelledby="footer-info-title" className="w-full max-w-lg rounded-3xl bg-white p-7 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div><p className="text-xs font-bold uppercase tracking-widest text-orange-600">TechStore • Informações</p><h2 id="footer-info-title" className="mt-2 text-2xl font-black text-slate-900">{infoTopic}</h2></div>
+              <button type="button" onClick={() => setInfoTopic(null)} aria-label="Fechar" className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X /></button>
+            </div>
+            <p className="mt-5 leading-7 text-slate-600">
+              {infoTopic === 'Sobre Nós' ? 'A TechStore é uma loja fictícia criada como projeto demonstrativo de e-commerce, com catálogo, filtros, favoritos e carrinho.' :
+               infoTopic === 'Trabalhe Conosco' ? 'Esta demonstração não possui processo seletivo ativo. A área institucional está pronta para receber informações reais em uma próxima etapa.' :
+               infoTopic === 'Política de Privacidade' ? 'Os favoritos e o carrinho ficam armazenados somente no navegador. Não há cadastro, envio de dados para servidor ou processamento de pagamento nesta versão.' :
+               infoTopic === 'Termos de Uso' ? 'Os produtos, preços, avaliações, estoque e informações desta loja são ilustrativos e não representam ofertas comerciais reais.' :
+               infoTopic === 'Trocas e Devoluções' ? 'Como esta é uma loja demonstrativa, nenhuma compra real é realizada e não existe operação de troca ou devolução.' :
+               infoTopic === 'Rastreamento' ? 'Ainda não há integração logística. Os pedidos gerados nesta demonstração não são enviados nem possuem rastreamento real.' :
+               infoTopic === 'Redes sociais' ? 'Os perfis oficiais da TechStore ainda não foram configurados. Os ícones sociais exibem esta informação em vez de direcionar para páginas genéricas.' :
+               'Central demonstrativa: explore o catálogo, abra os detalhes de um produto, adicione itens ao carrinho e teste a finalização. Nenhuma cobrança será feita.'}
+            </p>
+            <button type="button" onClick={() => setInfoTopic(null)} className="mt-7 w-full rounded-xl bg-orange-600 py-3 font-bold text-white hover:bg-orange-700">Entendi</button>
+          </section>
+        </div>
+      )}
 
       {cartOpen && (
         <div className="fixed inset-0 z-[70] flex justify-end bg-slate-950/50" onMouseDown={(event) => { if (event.target === event.currentTarget) setCartOpen(false); }}>
