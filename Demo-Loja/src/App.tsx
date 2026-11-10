@@ -5,13 +5,16 @@ import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { ProductCard } from './components/ProductCard';
+import { AdminPanel, type DemoSale } from './components/AdminPanel';
 import { catalogProducts } from './lib/catalogProducts';
 import type { Category, Product } from './lib/supabase';
 
 type CartLine = { productId: string; quantity: number };
 const CART_KEY = 'techstore_cart_v1';
 const FAVORITES_KEY = 'techstore_favorites_v1';
-const initialProducts = catalogProducts as Product[];
+const PRODUCTS_KEY = 'techstore_products_v1';
+const SALES_KEY = 'techstore_sales_v1';
+
 const categories: Category[] = [
   { id: 'consoles', name: 'Consoles', slug: 'consoles', created_at: '' },
   { id: 'perifericos', name: 'Periféricos', slug: 'perifericos', created_at: '' },
@@ -44,6 +47,8 @@ export default function App() {
   const selectedProduct = products.find((product) => product.id === selectedProductId);
 
   useEffect(() => { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }, [cart]);
+  useEffect(() => { localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products)); }, [products]);
+  useEffect(() => { localStorage.setItem(SALES_KEY, JSON.stringify(sales)); }, [sales]);
   useEffect(() => { localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites)); }, [favorites]);
   useEffect(() => {
     if (!notice) return;
@@ -116,7 +121,21 @@ export default function App() {
   const finishDemoOrder = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!cartProducts.length) return;
-    setOrderCode(`TS-${Date.now().toString().slice(-8)}`);
+    const form = new FormData(event.currentTarget);
+    const sale: DemoSale = {
+      id: `TS-${Date.now().toString().slice(-8)}`,
+      customer: String(form.get('customer') || 'Cliente demonstrativo'),
+      email: String(form.get('email') || 'sem-email@demo.local'),
+      date: new Date().toISOString(),
+      total,
+      items: cartProducts.map(({ product, quantity }) => ({ productId: product.id, name: product.name, quantity, unitPrice: product.price })),
+    };
+    setSales(current => [...current, sale]);
+    setProducts(current => current.map(product => {
+      const soldLine = cartProducts.find(line => line.product.id === product.id);
+      return soldLine ? { ...product, stock: Math.max(0, product.stock - soldLine.quantity) } : product;
+    }));
+    setOrderCode(sale.id);
     setCart([]);
     setCheckoutOpen(false);
     setCartOpen(false);
@@ -128,7 +147,7 @@ export default function App() {
       <Header
         onCartClick={() => setCartOpen(true)}
         cartItemsCount={itemCount}
-        onLoginClick={() => setNotice('Login demonstrativo: autenticação ainda não está habilitada.')}
+        onLoginClick={() => setLoginOpen(true)}
         searchTerm={search}
         onSearchChange={setSearch}
       />
@@ -209,6 +228,20 @@ export default function App() {
       </section>
       <Footer onInfoClick={setInfoTopic} />
 
+
+      {loginOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/70 p-4">
+          <form onSubmit={(event) => { event.preventDefault(); if (username === 'admin' && password === 'admin') { setLoginOpen(false); setAdminOpen(true); setLoginError(''); setUsername(''); setPassword(''); } else setLoginError('Usuário ou senha incorretos.'); }} className="w-full max-w-md rounded-3xl bg-white p-7 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-widest text-orange-600">Área restrita</p><h2 className="mt-1 text-2xl font-black text-slate-900">Entrar na administração</h2></div><button type="button" onClick={() => setLoginOpen(false)} className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X/></button></div>
+            <label className="mb-4 block text-sm font-semibold text-slate-700">Usuário<input autoComplete="username" value={username} onChange={e=>setUsername(e.target.value)} className="mt-1.5 w-full rounded-xl border px-4 py-3"/></label>
+            <label className="block text-sm font-semibold text-slate-700">Senha<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} className="mt-1.5 w-full rounded-xl border px-4 py-3"/></label>
+            {loginError && <p className="mt-3 text-sm font-semibold text-red-600">{loginError}</p>}
+            <div className="mt-4 rounded-xl bg-orange-50 p-3 text-sm text-orange-900">Acesso de demonstração: <strong>admin</strong> / <strong>admin</strong></div>
+            <button type="submit" className="mt-5 w-full rounded-xl bg-orange-600 py-3 font-bold text-white hover:bg-orange-700">Entrar no painel</button>
+          </form>
+        </div>
+      )}
+      {adminOpen && <AdminPanel products={products} sales={sales} onAddProduct={product=>setProducts(current=>[product,...current])} onDeleteProduct={id=>{setProducts(current=>current.filter(p=>p.id!==id));setCart(current=>current.filter(line=>line.productId!==id));}} onUpdateStock={(id,stock)=>setProducts(current=>current.map(p=>p.id===id?{...p,stock}:p))} onLogout={()=>setAdminOpen(false)}/>}
 
       {selectedProduct && (
         <div className="fixed inset-0 z-[65] overflow-y-auto bg-slate-50">
@@ -321,8 +354,8 @@ export default function App() {
               <button type="button" onClick={() => setCheckoutOpen(false)} aria-label="Fechar" className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X /></button>
             </div>
             <div className="space-y-4">
-              <label className="block text-sm font-semibold text-slate-700">Nome completo<input required minLength={3} autoComplete="name" className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-orange-400" placeholder="Seu nome" /></label>
-              <label className="block text-sm font-semibold text-slate-700">E-mail<input required type="email" autoComplete="email" className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-orange-400" placeholder="voce@email.com" /></label>
+              <label className="block text-sm font-semibold text-slate-700">Nome completo<input name="customer" required minLength={3} autoComplete="name" className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-orange-400" placeholder="Seu nome" /></label>
+              <label className="block text-sm font-semibold text-slate-700">E-mail<input name="email" required type="email" autoComplete="email" className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-orange-400" placeholder="voce@email.com" /></label>
               <label className="block text-sm font-semibold text-slate-700">Endereço de entrega<input required minLength={6} autoComplete="street-address" className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-orange-400" placeholder="Rua, número, bairro e cidade" /></label>
             </div>
             <div className="my-5 flex justify-between rounded-xl bg-slate-50 p-4 font-bold"><span className="text-slate-600">Total demonstrativo</span><span className="text-orange-600">{formatPrice(total)}</span></div>
