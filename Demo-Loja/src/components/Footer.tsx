@@ -1,53 +1,67 @@
-import { ArrowUpRight, Facebook, Instagram, Mail, MapPin, Phone, ShieldCheck, Youtube } from 'lucide-react';
+import { ArrowUpRight, Facebook, Instagram, Mail, MapPin, Phone, ShieldCheck, Truck, CreditCard, Headphones, Youtube } from 'lucide-react';
 
 interface FooterProps {
   onInfoClick: (topic: string) => void;
 }
 
-const groups = [
-  { title: 'Institucional', links: ['Sobre Nós', 'Trabalhe Conosco', 'Política de Privacidade', 'Termos de Uso'] },
-  { title: 'Atendimento', links: ['Central de Ajuda', 'Trocas e Devoluções', 'Rastreamento', 'FAQ'] },
-];
+const institutional = ['Sobre Nós', 'Trabalhe Conosco', 'Política de Privacidade', 'Termos de Uso'];
+const support = ['Central de Ajuda', 'Trocas e Devoluções', 'Rastreamento', 'FAQ'];
 
-export const Footer = ({ onInfoClick }: FooterProps) => (
-  <footer id="contato" className="bg-[#0b1220] text-slate-300">
-    <div className="mx-auto max-w-7xl px-5 pb-8 pt-16 sm:px-8">
-      <div className="grid gap-12 border-b border-white/10 pb-12 lg:grid-cols-[1.35fr_1fr_1fr_1.1fr]">
+export const Footer = ({ onInfoClick }: FooterProps) => {
+  const linkClass = 'group inline-flex items-center gap-1 text-sm text-slate-400 transition hover:text-white';
+  const socialClass = 'grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-300 transition hover:-translate-y-0.5 hover:border-orange-400/50 hover:bg-orange-500 hover:text-white';
+
+  return (
+    <footer id="contato" className="bg-[#080f1d] text-white">
+      <div className="border-b border-white/10">
+        <div className="mx-auto grid max-w-7xl gap-5 px-5 py-7 sm:grid-cols-3 lg:px-8">
+          <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-white/5 text-orange-400"><ShieldCheck size={21}/></span><div><p className="text-sm font-bold">Ambiente demonstrativo</p><p className="mt-0.5 text-xs text-slate-400">Experimente sem cobranças reais</p></div></div>
+          <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-white/5 text-orange-400"><Truck size={21}/></span><div><p className="text-sm font-bold">Fluxo de pedidos simulado</p><p className="mt-0.5 text-xs text-slate-400">Sem envio ou entrega de produtos</p></div></div>
+          <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-white/5 text-orange-400"><Headphones size={21}/></span><div><p className="text-sm font-bold">Central de informações</p><p className="mt-0.5 text-xs text-slate-400">Orientações sobre os recursos da loja</p></div></div>
+        </div>
+      </div>
+
+      <div className="mx-auto grid max-w-7xl gap-12 px-5 py-14 sm:grid-cols-2 lg:grid-cols-[1.4fr_0.8fr_0.8fr_1fr] lg:px-8 lg:py-16">
         <div>
-          <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="group flex items-center gap-3 text-left">
-            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-orange-500 text-lg font-black text-white shadow-lg shadow-orange-950/30">T</span>
-            <span><span className="block text-xl font-black tracking-tight text-white">tech<span className="text-orange-400">store</span></span><span className="block text-[10px] font-semibold uppercase tracking-[.22em] text-slate-500">Tecnologia & lifestyle</span></span>
+          <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2 text-left">
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-orange-500 text-white"><CreditCard size={20}/></span>
+            <span className="text-2xl font-black tracking-tight">Tech<span className="text-orange-400">Store</span></span>
           </button>
-          <p className="mt-5 max-w-xs text-sm leading-7 text-slate-400">Seu próximo upgrade começa aqui. Explore produtos, compare opções e monte um setup com a sua identidade.</p>
+          <p className="mt-5 max-w-sm text-sm leading-7 text-slate-400">Tecnologia, games e acessórios para inspirar seu próximo setup. Explore uma experiência de e-commerce criada para demonstração.</p>
           <div className="mt-6 flex gap-2">
-            {[
-              { label: 'Facebook', Icon: Facebook },
-              { label: 'Instagram', Icon: Instagram },
-              { label: 'YouTube', Icon: Youtube },
-            ].map(({ label, Icon }) => <button key={label} type="button" aria-label={label} onClick={() => onInfoClick('Redes sociais')} className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 text-slate-400 transition hover:border-orange-400/50 hover:bg-orange-500/10 hover:text-orange-300"><Icon size={17}/></button>)}
+            <button type="button" aria-label="Facebook" onClick={() => onInfoClick('Redes sociais')} className={socialClass}><Facebook size={18}/></button>
+            <button type="button" aria-label="Instagram" onClick={() => onInfoClick('Redes sociais')} className={socialClass}><Instagram size={18}/></button>
+            <button type="button" aria-label="YouTube" onClick={() => onInfoClick('Redes sociais')} className={socialClass}><Youtube size={18}/></button>
           </div>
         </div>
-        {groups.map(group => <div key={group.title}>
-          <h3 className="text-sm font-extrabold uppercase tracking-[.16em] text-white">{group.title}</h3>
-          <ul className="mt-5 space-y-3.5">
-            {group.links.map(link => <li key={link}><button type="button" onClick={() => onInfoClick(link)} className="group inline-flex items-center gap-1 text-left text-sm text-slate-400 transition hover:text-orange-300">{link}<ArrowUpRight size={13} className="opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100"/></button></li>)}
-          </ul>
-        </div>)}
+
         <div>
-          <h3 className="text-sm font-extrabold uppercase tracking-[.16em] text-white">Fale com a gente</h3>
-          <p className="mt-5 text-sm leading-6 text-slate-400">Precisa de ajuda para navegar pela loja demonstrativa? Consulte nossa central de ajuda.</p>
-          <button type="button" onClick={() => onInfoClick('Central de Ajuda')} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-400">Acessar atendimento <ArrowUpRight size={16}/></button>
-          <div className="mt-5 space-y-3 text-xs text-slate-500">
-            <p className="flex items-center gap-2"><Mail size={14}/> contato@techstore.example</p>
-            <p className="flex items-center gap-2"><MapPin size={14}/> São Paulo, Brasil</p>
-          </div>
+          <h3 className="mb-5 text-sm font-extrabold uppercase tracking-[0.14em] text-white">Institucional</h3>
+          <ul className="space-y-3">{institutional.map(topic => <li key={topic}><button type="button" onClick={() => onInfoClick(topic)} className={linkClass}>{topic}<ArrowUpRight size={13} className="opacity-0 transition group-hover:opacity-100"/></button></li>)}</ul>
+        </div>
+
+        <div>
+          <h3 className="mb-5 text-sm font-extrabold uppercase tracking-[0.14em] text-white">Ajuda e suporte</h3>
+          <ul className="space-y-3">{support.map(topic => <li key={topic}><button type="button" onClick={() => onInfoClick(topic)} className={linkClass}>{topic}<ArrowUpRight size={13} className="opacity-0 transition group-hover:opacity-100"/></button></li>)}</ul>
+        </div>
+
+        <div>
+          <h3 className="mb-5 text-sm font-extrabold uppercase tracking-[0.14em] text-white">Fale com a gente</h3>
+          <ul className="space-y-4 text-sm text-slate-400">
+            <li className="flex items-start gap-3"><Mail size={17} className="mt-0.5 shrink-0 text-orange-400"/><span><strong className="block font-semibold text-slate-200">E-mail</strong>contato@techstore.example</span></li>
+            <li className="flex items-start gap-3"><Phone size={17} className="mt-0.5 shrink-0 text-orange-400"/><span><strong className="block font-semibold text-slate-200">Telefone</strong>(11) 99999-9999</span></li>
+            <li className="flex items-start gap-3"><MapPin size={17} className="mt-0.5 shrink-0 text-orange-400"/><span><strong className="block font-semibold text-slate-200">Localização</strong>São Paulo, SP · Brasil</span></li>
+          </ul>
+          <p className="mt-4 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] leading-5 text-slate-500">Informações de contato ilustrativas. Os canais ainda não recebem mensagens reais.</p>
         </div>
       </div>
-      <div className="flex flex-col gap-4 pt-7 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-        <p>© {new Date().getFullYear()} TechStore. Todos os direitos reservados.</p>
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2"><span className="inline-flex items-center gap-1.5"><ShieldCheck size={14} className="text-emerald-400"/> Ambiente de demonstração</span><button onClick={() => onInfoClick('Política de Privacidade')} className="hover:text-orange-300">Privacidade</button><button onClick={() => onInfoClick('Termos de Uso')} className="hover:text-orange-300">Termos</button></div>
+
+      <div className="border-t border-white/10">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+          <p>© {new Date().getFullYear()} TechStore. Todos os direitos reservados.</p>
+          <div className="flex flex-wrap gap-x-5 gap-y-2"><button type="button" onClick={() => onInfoClick('Política de Privacidade')} className="transition hover:text-white">Privacidade</button><button type="button" onClick={() => onInfoClick('Termos de Uso')} className="transition hover:text-white">Termos de uso</button><span>Projeto demonstrativo · Sem transações reais</span></div>
+        </div>
       </div>
-      <p className="mt-5 text-center text-[11px] leading-5 text-slate-600">Projeto educacional de e-commerce. Não representa uma operação comercial real; pedidos e informações são apenas demonstrativos.</p>
-    </div>
-  </footer>
-);
+    </footer>
+  );
+};
