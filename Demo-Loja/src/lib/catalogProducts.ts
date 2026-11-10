@@ -98,4 +98,47 @@ export const catalogProducts = [
     price: 279.90, original_price: 329.90, image_url: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=900&q=85',
     category_id: 'perifericos', stock: 8, rating: 4.5, featured: false, created_at: new Date().toISOString(),
   },
+
+  {
+    id: 'local-mouse-logitech-g502', name: 'Mouse Gamer Logitech G502 HERO', description: 'Mouse gamer com sensor de alta precisão e pesos ajustáveis.',
+    details: 'Mouse gamer com sensor HERO, botões programáveis e sistema de pesos para personalizar a pegada.',
+    features: ['Sensor HERO', '11 botões programáveis', 'Pesos ajustáveis', 'Iluminação RGB'],
+    price: 329.90, original_price: 399.90, image_url: 'https://images.unsplash.com/photo-1527814050087-3793815479db?auto=format&fit=crop&w=900&q=85',
+    category_id: 'perifericos', stock: 12, rating: 4.7, featured: false, created_at: new Date().toISOString(),
+  },
+  {
+    id: 'local-headset-logitech-g435', name: 'Headset Logitech G435', description: 'Headset sem fio leve para jogos e chamadas.',
+    details: 'Headset sem fio leve, com conexão de baixa latência e Bluetooth para dispositivos compatíveis.',
+    features: ['Conexão sem fio', 'Bluetooth', 'Microfones integrados', 'Design leve'],
+    price: 399.90, original_price: 459.90, image_url: 'https://images.unsplash.com/photo-1599669454699-248893623440?auto=format&fit=crop&w=900&q=85',
+    category_id: 'perifericos', stock: 7, rating: 4.6, featured: false, created_at: new Date().toISOString(),
+  },
+  {
+    id: 'local-controle-switch-pro', name: 'Controle Nintendo Switch Pro', description: 'Controle sem fio para Nintendo Switch.',
+    details: 'Controle ergonômico para sessões prolongadas no Nintendo Switch, com sensores de movimento e vibração HD.',
+    features: ['Conexão sem fio', 'Vibração HD', 'Sensor de movimento', 'Bateria recarregável'],
+    price: 449.90, original_price: 499.90, image_url: 'https://images.unsplash.com/photo-1592840496694-26d035b52b48?auto=format&fit=crop&w=900&q=85',
+    category_id: 'acessorios', stock: 8, rating: 4.8, featured: false, created_at: new Date().toISOString(),
+  },
+  {
+    id: 'local-webcam-streaming', name: 'Webcam Streaming 1080p', description: 'Webcam Full HD para streaming e videoconferências.',
+    details: 'Webcam USB com resolução Full HD e encaixe para monitor ou tripé compatível.',
+    features: ['Resolução 1080p', 'Conexão USB', 'Correção automática de luz', 'Microfone integrado'],
+    price: 259.90, original_price: 319.90, image_url: 'https://images.unsplash.com/photo-1587826080692-f439cd0b70da?auto=format&fit=crop&w=900&q=85',
+    category_id: 'acessorios', stock: 10, rating: 4.4, featured: false, created_at: new Date().toISOString(),
+  },
+  {
+    id: 'local-console-retro', name: 'Console Retrô Portátil', description: 'Console portátil para jogos clássicos (modelo ilustrativo).',
+    details: 'Dispositivo portátil fictício para compor o catálogo demonstrativo. Especificações ilustrativas.',
+    features: ['Tela portátil', 'Controles integrados', 'Bateria recarregável', 'Design compacto'],
+    price: 299.90, original_price: 359.90, image_url: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=900&q=85',
+    category_id: 'consoles', stock: 5, rating: 4.2, featured: false, created_at: new Date().toISOString(),
+  },
+  {
+    id: 'local-microfone-fifine', name: 'Microfone Condensador USB', description: 'Microfone de mesa para gravação, chamadas e lives.',
+    details: 'Microfone USB demonstrativo para streaming e criação de conteúdo, com suporte de mesa.',
+    features: ['Conexão USB', 'Padrão cardioide (ilustrativo)', 'Controle de ganho', 'Suporte de mesa'],
+    price: 219.90, original_price: 279.90, image_url: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=900&q=85',
+    category_id: 'perifericos', stock: 9, rating: 4.5, featured: false, created_at: new Date().toISOString(),
+  },
 ];
