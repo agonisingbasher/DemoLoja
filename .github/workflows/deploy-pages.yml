@@ -1,0 +1,60 @@
+name: Deploy DemoLoja to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Demo-Loja/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Demo-Loja/package-lock.json
+
+      - name: Install dependencies
+        working-directory: Demo-Loja
+        run: npm ci
+
+      - name: Type check
+        working-directory: Demo-Loja
+        run: npm run typecheck
+
+      - name: Build application
+        working-directory: Demo-Loja
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: Demo-Loja/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
