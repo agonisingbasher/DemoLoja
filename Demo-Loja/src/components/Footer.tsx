@@ -1,72 +1,59 @@
 import { Facebook, Instagram, Twitter, Youtube, Mail, Phone, MapPin } from 'lucide-react';
 
-export const Footer = () => {
+interface FooterProps {
+  onInfoClick: (topic: string) => void;
+}
+
+export const Footer = ({ onInfoClick }: FooterProps) => {
+  const linkClass = 'text-left transition hover:text-orange-400 hover:underline';
+  const socialClass = 'rounded-full p-2 transition hover:bg-slate-800 hover:text-orange-400';
+
   return (
-    <footer className="bg-gray-900 text-gray-300">
+    <footer id="contato" className="bg-gray-900 text-gray-300">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div className="space-y-4">
-            <h3 className="text-white text-xl font-bold">TechStore</h3>
-            <p className="text-sm">
-              Sua loja de tecnologia e gaming com os melhores preços e produtos do mercado.
-            </p>
-            <div className="flex space-x-4">
-              <a href="#" className="hover:text-orange-500 transition">
-                <Facebook size={20} />
-              </a>
-              <a href="#" className="hover:text-orange-500 transition">
-                <Instagram size={20} />
-              </a>
-              <a href="#" className="hover:text-orange-500 transition">
-                <Twitter size={20} />
-              </a>
-              <a href="#" className="hover:text-orange-500 transition">
-                <Youtube size={20} />
-              </a>
+            <h3 className="text-xl font-bold text-white">TechStore</h3>
+            <p className="text-sm">Sua loja demonstrativa de tecnologia e gaming, com produtos para montar seu setup.</p>
+            <div className="flex space-x-2">
+              <button type="button" aria-label="Facebook" onClick={() => onInfoClick('Redes sociais')} className={socialClass}><Facebook size={20} /></button>
+              <button type="button" aria-label="Instagram" onClick={() => onInfoClick('Redes sociais')} className={socialClass}><Instagram size={20} /></button>
+              <button type="button" aria-label="Twitter" onClick={() => onInfoClick('Redes sociais')} className={socialClass}><Twitter size={20} /></button>
+              <button type="button" aria-label="YouTube" onClick={() => onInfoClick('Redes sociais')} className={socialClass}><Youtube size={20} /></button>
             </div>
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-4">Institucional</h4>
-            <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-orange-500 transition">Sobre Nós</a></li>
-              <li><a href="#" className="hover:text-orange-500 transition">Trabalhe Conosco</a></li>
-              <li><a href="#" className="hover:text-orange-500 transition">Política de Privacidade</a></li>
-              <li><a href="#" className="hover:text-orange-500 transition">Termos de Uso</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-white font-semibold mb-4">Atendimento</h4>
-            <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-orange-500 transition">Central de Ajuda</a></li>
-              <li><a href="#" className="hover:text-orange-500 transition">Trocas e Devoluções</a></li>
-              <li><a href="#" className="hover:text-orange-500 transition">Rastreamento</a></li>
-              <li><a href="#" className="hover:text-orange-500 transition">FAQ</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-white font-semibold mb-4">Contato</h4>
+            <h4 className="mb-4 font-semibold text-white">Institucional</h4>
             <ul className="space-y-3 text-sm">
-              <li className="flex items-center space-x-2">
-                <Phone size={16} />
-                <span>(11) 9999-9999</span>
-              </li>
-              <li className="flex items-center space-x-2">
-                <Mail size={16} />
-                <span>contato@techstore.com.br</span>
-              </li>
-              <li className="flex items-start space-x-2">
-                <MapPin size={16} className="mt-1" />
-                <span>São Paulo, SP<br />Brasil</span>
-              </li>
+              {['Sobre Nós', 'Trabalhe Conosco', 'Política de Privacidade', 'Termos de Uso'].map((topic) => (
+                <li key={topic}><button type="button" onClick={() => onInfoClick(topic)} className={linkClass}>{topic}</button></li>
+              ))}
             </ul>
+          </div>
+
+          <div>
+            <h4 className="mb-4 font-semibold text-white">Atendimento</h4>
+            <ul className="space-y-3 text-sm">
+              {['Central de Ajuda', 'Trocas e Devoluções', 'Rastreamento', 'FAQ'].map((topic) => (
+                <li key={topic}><button type="button" onClick={() => onInfoClick(topic)} className={linkClass}>{topic}</button></li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="mb-4 font-semibold text-white">Contato</h4>
+            <ul className="space-y-3 text-sm">
+              <li><a href="tel:+5511999999999" className="flex items-center gap-2 hover:text-orange-400"><Phone size={16} /> (11) 99999-9999</a></li>
+              <li><a href="mailto:contato@techstore.example" className="flex items-center gap-2 hover:text-orange-400"><Mail size={16} /> contato@techstore.example</a></li>
+              <li className="flex items-start gap-2"><MapPin size={16} className="mt-1 shrink-0" /><span>São Paulo, SP<br />Brasil</span></li>
+            </ul>
+            <p className="mt-3 text-xs text-slate-500">Dados de contato ilustrativos desta demonstração.</p>
           </div>
         </div>
 
-        <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
-          <p>&copy; 2025 TechStore. Todos os direitos reservados.</p>
+        <div className="mt-8 border-t border-gray-800 pt-8 text-center text-sm">
+          <p>© {new Date().getFullYear()} TechStore. Projeto demonstrativo para fins educacionais.</p>
         </div>
       </div>
     </footer>
