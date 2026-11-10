@@ -31,6 +31,7 @@ function readStorage<T,>(key: string, fallback: T): T {
   }
 }
 
+// TechStore demo storefront with local admin, inventory and sales state.
 export default function App() {
   const [products, setProducts] = useState<Product[]>(() => readStorage(PRODUCTS_KEY, catalogProducts as Product[]));
   const [sales, setSales] = useState<DemoSale[]>(() => readStorage(SALES_KEY, []));
