@@ -250,21 +250,27 @@ export default function App() {
       {infoTopic && (
         <div className="fixed inset-0 z-[95] overflow-y-auto bg-slate-50">
           <section aria-labelledby="footer-info-title" className="min-h-screen bg-slate-50">
-            <div className="flex items-start justify-between gap-4">
-              <div><p className="text-xs font-bold uppercase tracking-widest text-orange-600">TechStore • Informações</p><h2 id="footer-info-title" className="mt-2 text-2xl font-black text-slate-900">{infoTopic}</h2></div>
-              <button type="button" onClick={() => setInfoTopic(null)} aria-label="Fechar" className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X /></button>
+            <div className="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 shadow-sm">
+              <button type="button" onClick={() => setInfoTopic(null)} className="inline-flex items-center gap-2 font-bold text-slate-700 hover:text-orange-600"><ArrowLeft size={19}/> Voltar à loja</button>
+              <span className="font-black text-orange-600">TechStore</span>
             </div>
-            <p className="mt-5 leading-7 text-slate-600">
-              {infoTopic === 'Sobre Nós' ? 'A TechStore é uma loja fictícia criada como projeto demonstrativo de e-commerce, com catálogo, filtros, favoritos e carrinho.' :
-               infoTopic === 'Trabalhe Conosco' ? 'Esta demonstração não possui processo seletivo ativo. A área institucional está pronta para receber informações reais em uma próxima etapa.' :
-               infoTopic === 'Política de Privacidade' ? 'Os favoritos e o carrinho ficam armazenados somente no navegador. Não há cadastro, envio de dados para servidor ou processamento de pagamento nesta versão.' :
-               infoTopic === 'Termos de Uso' ? 'Os produtos, preços, avaliações, estoque e informações desta loja são ilustrativos e não representam ofertas comerciais reais.' :
-               infoTopic === 'Trocas e Devoluções' ? 'Como esta é uma loja demonstrativa, nenhuma compra real é realizada e não existe operação de troca ou devolução.' :
-               infoTopic === 'Rastreamento' ? 'Ainda não há integração logística. Os pedidos gerados nesta demonstração não são enviados nem possuem rastreamento real.' :
-               infoTopic === 'Redes sociais' ? 'Os perfis oficiais da TechStore ainda não foram configurados. Os ícones sociais exibem esta informação em vez de direcionar para páginas genéricas.' :
-               'Central demonstrativa: explore o catálogo, abra os detalhes de um produto, adicione itens ao carrinho e teste a finalização. Nenhuma cobrança será feita.'}
-            </p>
-            <button type="button" onClick={() => setInfoTopic(null)} className="mt-7 w-full rounded-xl bg-orange-600 py-3 font-bold text-white hover:bg-orange-700">Entendi</button>
+            <main className="mx-auto max-w-4xl px-5 py-14">
+              <p className="text-xs font-bold uppercase tracking-widest text-orange-600">TechStore • Institucional</p>
+              <h1 id="footer-info-title" className="mt-3 text-4xl font-black text-slate-900">{infoTopic}</h1>
+              <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+                <p className="text-lg leading-8 text-slate-600">
+                  {infoTopic === 'Sobre Nós' ? 'A TechStore é uma loja fictícia criada como projeto demonstrativo de e-commerce, com catálogo, filtros, favoritos, carrinho e painel administrativo.' :
+                   infoTopic === 'Trabalhe Conosco' ? 'Esta demonstração não possui processo seletivo ativo. Esta página representa a área de carreiras e pode receber oportunidades e formulário de candidatura em uma versão conectada a backend.' :
+                   infoTopic === 'Política de Privacidade' ? 'Esta versão armazena catálogo personalizado, favoritos, carrinho e vendas demonstrativas no armazenamento local do navegador. Não há envio desses dados para um servidor.' :
+                   infoTopic === 'Termos de Uso' ? 'Os produtos, preços, avaliações, estoque e informações desta loja são ilustrativos. O checkout registra pedidos fictícios e não realiza cobranças ou entregas.' :
+                   infoTopic === 'Trocas e Devoluções' ? 'Como esta é uma loja demonstrativa, nenhuma compra real é realizada e não existe operação comercial de troca ou devolução.' :
+                   infoTopic === 'Rastreamento' ? 'Os pedidos registrados nesta demonstração não são enviados e não possuem código logístico real. O painel administrativo exibe apenas o histórico local de pedidos.' :
+                   infoTopic === 'Redes sociais' ? 'Os perfis oficiais da TechStore ainda não foram configurados. Esta página fica preparada para receber os canais sociais da loja.' :
+                   'Central de ajuda demonstrativa: explore o catálogo, abra os detalhes dos produtos, adicione itens ao carrinho e teste a finalização. Nenhuma cobrança será feita.'}
+                </p>
+              </div>
+              <p className="mt-6 text-sm text-slate-400">Página demonstrativa da TechStore. Conteúdo ilustrativo para fins educacionais.</p>
+            </main>
           </section>
         </div>
       )}
