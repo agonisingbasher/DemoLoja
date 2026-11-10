@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { ArrowRight, CheckCircle2, Heart, Minus, Plus, Search, ShieldCheck, ShoppingBag, ShoppingCart, Trash2, X } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Heart, Minus, Plus, Search, ShieldCheck, ShoppingCart, Trash2, X } from 'lucide-react';
 import { CategoryFilter } from './components/CategoryFilter';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
