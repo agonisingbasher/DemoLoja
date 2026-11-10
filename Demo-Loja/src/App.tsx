@@ -32,6 +32,13 @@ function readStorage<T,>(key: string, fallback: T): T {
 }
 
 export default function App() {
+  const [products, setProducts] = useState<Product[]>(() => readStorage(PRODUCTS_KEY, catalogProducts as Product[]));
+  const [sales, setSales] = useState<DemoSale[]>(() => readStorage(SALES_KEY, []));
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
   const [cart, setCart] = useState<CartLine[]>(() => readStorage(CART_KEY, []));
   const [favorites, setFavorites] = useState<string[]>(() => readStorage(FAVORITES_KEY, []));
   const [category, setCategory] = useState<string | null>(null);
