@@ -11,7 +11,7 @@ import type { Category, Product } from './lib/supabase';
 type CartLine = { productId: string; quantity: number };
 const CART_KEY = 'techstore_cart_v1';
 const FAVORITES_KEY = 'techstore_favorites_v1';
-const products = catalogProducts as Product[];
+const initialProducts = catalogProducts as Product[];
 const categories: Category[] = [
   { id: 'consoles', name: 'Consoles', slug: 'consoles', created_at: '' },
   { id: 'perifericos', name: 'Periféricos', slug: 'perifericos', created_at: '' },
