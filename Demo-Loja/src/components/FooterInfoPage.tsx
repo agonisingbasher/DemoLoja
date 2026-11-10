@@ -17,7 +17,7 @@ const contentByTopic: Record<string, { eyebrow: string; title: string; intro: st
   'Trabalhe Conosco': {
     eyebrow: 'Carreiras', title: 'Boas ideias começam com pessoas.',
     intro: 'Gostamos de pessoas curiosas, colaborativas e que queiram construir experiências digitais melhores. Esta página representa a área de carreiras da loja demonstrativa.',
-    icon: BriefcaseBusiness,
+    icon: Briefcase,
     sections: [
       { title: 'Como é trabalhar na TechStore', body: 'Valorizamos comunicação transparente, aprendizado contínuo, responsabilidade e atenção à experiência de quem utiliza nossos produtos.' },
       { title: 'Áreas que fazem parte da operação', body: 'Em uma operação real, diferentes especialidades colaborariam para manter a loja funcionando.', bullets: ['Tecnologia e desenvolvimento', 'Experiência do cliente e atendimento', 'Operações, catálogo e logística', 'Marketing e conteúdo'] },
@@ -86,7 +86,7 @@ const contentByTopic: Record<string, { eyebrow: string; title: string; intro: st
   'FAQ': {
     eyebrow: 'Dúvidas frequentes', title: 'Respostas rápidas para continuar.',
     intro: 'Confira as perguntas mais comuns sobre o funcionamento da loja demonstrativa.',
-    icon: CircleHelp,
+    icon: HelpCircle,
     sections: [
       { title: 'A loja vende produtos de verdade?', body: 'Não. Esta é uma demonstração educacional; os produtos e valores são ilustrativos.' },
       { title: 'O checkout cobra meu cartão?', body: 'Não. Não existe integração de pagamento nem cobrança real.' },
