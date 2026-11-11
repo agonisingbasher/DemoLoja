@@ -20,11 +20,11 @@ export const Header=({onCartClick,cartItemsCount,onLoginClick,searchTerm,onSearc
   const accountItem=(tab:AccountTab,label:string)=> <button onClick={()=>{onAccountClick(tab);setAccountMenu(false);}} className="block w-full rounded-lg px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-700">{label}</button>;
   return <header data-techstore-main-header className="relative z-40 border-b border-[#1c4384] shadow-lg">
     <div className="bg-[#07162e] text-slate-200">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-5 gap-y-2 px-4 py-2 text-xs">
-        <button onClick={()=>onAccountClick('address')} className="inline-flex items-center gap-2 font-bold hover:text-white"><MapPin size={15} className="text-orange-400"/>{account?.address?.city?'Entregar em '+account.address.city+' / '+account.address.state:'Cadastre seu endereço de entrega'} <ChevronDown size={13}/></button>
+      <div className="mx-auto grid max-w-7xl grid-cols-1 justify-items-center gap-y-2 px-4 py-2 text-xs lg:flex lg:flex-wrap lg:items-center lg:justify-between lg:gap-x-5">
+        <button onClick={()=>onAccountClick('address')} className="inline-flex min-w-0 max-w-full items-center justify-center gap-2 text-center font-bold hover:text-white"><MapPin size={15} className="text-orange-400"/>{account?.address?.city?'Entregar em '+account.address.city+' / '+account.address.state:'Cadastre seu endereço de entrega'} <ChevronDown size={13}/></button>
         <span className="hidden font-semibold text-slate-400 sm:inline">TechStore · E-commerce de demonstração · Nenhuma cobrança real</span>
         <LanguageSwitcher inline/>
-        <a href={'https://agonisingbasher.github.io/personal-website/?lang='+locale} target="_blank" rel="noopener noreferrer" className="font-bold text-orange-300 hover:text-orange-100">Conheça o desenvolvedor ↗</a>
+        <a href={'https://agonisingbasher.github.io/personal-website/?lang='+locale} target="_blank" rel="noopener noreferrer" className="text-center font-bold text-orange-300 hover:text-orange-100">Conheça o desenvolvedor ↗</a>
       </div>
     </div>
     <div className="bg-[#0c285a] text-white">
