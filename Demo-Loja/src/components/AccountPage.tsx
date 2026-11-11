@@ -1,12 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { ArrowLeft, CheckCircle2, ChevronDown, CircleUserRound, ClipboardList, Home, LockKeyhole, LogOut, Mail, MapPin, ShieldCheck, UserRoundPlus, UserRound } from 'lucide-react';
+import { ArrowLeft, CircleUserRound, ClipboardList, Home, LockKeyhole, LogOut, MapPin, ShieldCheck, UserRoundPlus, UserRound } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { profileFromUser, type AccountProfile, type DeliveryAddress } from '../lib/customerAccount';
 import type { DemoSale } from './AdminPanel';
 import { money } from '../lib/promotions';
 import { Footer } from './Footer';
 
-type Props = { account:AccountProfile|null;orders:DemoSale[];
+type Props = { account:AccountProfile|null;orders:DemoSale[];initialTab?:ProfileTab;
   onBack:()=>void;onChange:(profile:AccountProfile|null)=>void;
   onInfoClick:(topic:string)=>void;
 };
@@ -15,9 +15,9 @@ const digits=(s:string)=>s.replace(/\D/g,'');
 const cepMask=(s:string)=>digits(s).slice(0,8).replace(/^(\d{5})(\d)/,'$1-$2');
 type AuthTab='login'|'register';
 type ProfileTab='profile'|'address'|'orders';
-export function AccountPage({account,orders,onBack,onChange,onInfoClick}:Props){
+export function AccountPage({account,orders,initialTab='profile',onBack,onChange,onInfoClick}:Props){
   const [authTab,setAuthTab]=useState<AuthTab>('register');
-  const [profileTab,setProfileTab]=useState<ProfileTab>('profile');
+  const [profileTab,setProfileTab]=useState<ProfileTab>(initialTab);
   const [name,setName]=useState(account?.name||'');
   const [email,setEmail]=useState(account?.email||'');
   const [password,setPassword]=useState('');
