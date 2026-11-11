@@ -53,3 +53,18 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 body:has([data-techstore-main-header]):not(:has([data-techstore-overlay])) #techstore-language-floating {
   display: none;
 }
+
+/* Translated labels may be longer than Portuguese. Never allow a single
+   heading or a flex/grid child to create horizontal scrolling on phones. */
+html, body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+#root {
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+[data-techstore-main-header] {
+  max-width: 100%;
+}
