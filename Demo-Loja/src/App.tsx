@@ -433,10 +433,13 @@ export default function App() {
             </div>
             <div className="space-y-3 border-t border-slate-100 p-6">
               <div className="flex justify-between text-sm text-slate-600"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
-              <div className="flex justify-between text-sm text-slate-600"><span>Entrega</span><span>{shipping === 0 ? 'Grátis' : formatPrice(shipping)}</span></div>
+              <div className="flex justify-between text-sm text-slate-600"><span>Entrega simulada</span><span>{shipping === 0 ? 'Grátis' : formatPrice(shipping)}</span></div>
+              {discount>0&&<div className="flex justify-between text-sm font-bold text-emerald-700"><span>Cupom ({appliedCoupon})</span><span>-{formatPrice(discount)}</span></div>}
+              {pixDiscount>0&&<div className="flex justify-between text-sm font-bold text-emerald-700"><span>Desconto Pix demo</span><span>-{formatPrice(pixDiscount)}</span></div>
               {subtotal > 0 && subtotal < 499 && <p className="text-xs text-emerald-600">Faltam {formatPrice(499 - subtotal)} para ganhar frete grátis.</p>}
               <div className="flex justify-between border-t border-slate-100 pt-3 text-lg font-black text-slate-900"><span>Total</span><span>{formatPrice(total)}</span></div>
-              <button disabled={!cartProducts.length} onClick={() => setCheckoutOpen(true)} className="w-full rounded-xl bg-orange-600 py-3.5 font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-slate-300">Continuar para entrega</button>
+              <button onClick={()=>setCouponsOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 py-2.5 text-sm font-bold text-orange-700 hover:bg-orange-100"><Gift size={17}/> Ver cupons disponíveis</button>
+              <button disabled={!cartProducts.length} onClick={() => {setCartOpen(false);setCheckoutOpen(true);}} className="w-full rounded-xl bg-orange-600 py-3.5 font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-slate-300">Continuar para entrega</button>
               <p className="text-center text-xs text-slate-400">Demonstração — sem pagamento real.</p>
             </div>
           </aside>
@@ -445,23 +448,47 @@ export default function App() {
 
       {checkoutOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 p-4">
-          <form onSubmit={finishDemoOrder} className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+          <form onSubmit={finishDemoOrder} className="max-h-[94vh] w-full max-w-xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
             <div className="mb-6 flex items-start justify-between">
-              <div><p className="text-sm font-bold uppercase tracking-widest text-orange-600">Última etapa</p><h2 className="mt-1 text-2xl font-black text-slate-900">Dados para entrega</h2></div>
+              <div><p className="text-sm font-bold uppercase tracking-widest text-orange-600">Última etapa</p><h2 className="mt-1 text-2xl font-black text-slate-900">Finalize sua simulação</h2></div>
               <button type="button" onClick={() => setCheckoutOpen(false)} aria-label="Fechar" className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X /></button>
             </div>
             <div className="space-y-4">
               <label className="block text-sm font-semibold text-slate-700">Nome completo<input name="customer" required minLength={3} autoComplete="name" className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-orange-400" placeholder="Seu nome" /></label>
               <label className="block text-sm font-semibold text-slate-700">E-mail<input name="email" required type="email" autoComplete="email" className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-orange-400" placeholder="voce@email.com" /></label>
-              <label className="block text-sm font-semibold text-slate-700">Endereço de entrega<input required minLength={6} autoComplete="street-address" className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-orange-400" placeholder="Rua, número, bairro e cidade" /></label>
+              <p className="rounded-lg bg-orange-50 p-3 text-xs leading-5 text-orange-900">Use dados de teste. Nenhum produto é enviado e não solicitamos endereço completo ou cartão.</p>
+              <label className="block text-sm font-semibold text-slate-700">CEP para simulação<input inputMode="numeric" maxLength={9} value={checkoutCep} onChange={e=>setCheckoutCep(e.target.value.replace(/[^0-9-]/g,''))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3" placeholder="00000-000 (opcional)"/></label>
+              <fieldset className="rounded-xl border p-4"><legend className="px-2 text-sm font-black">Opção de entrega (simulada)</legend><div className="space-y-2">{([{id:'economico',label:'Econômica · 7–10 dias úteis',value:subtotal>=499?'Grátis':formatPrice(19.9)},{id:'expresso',label:'Expressa · 3–5 dias úteis',value:formatPrice(34.9)},{id:'retirada',label:'Retirada simulada',value:'Grátis'}] as const).map(option=><label key={option.id} className="flex items-center gap-2 text-sm"><input type="radio" checked={delivery===option.id} onChange={()=>setDelivery(option.id)}/><span className="flex-1">{option.label}</span><strong>{option.value}</strong></label>)}</div></fieldset>
+              <fieldset className="rounded-xl border p-4"><legend className="px-2 text-sm font-black">Forma de pagamento ilustrativa</legend><div className="grid gap-2">{([{id:'card',label:'Cartão — até 10x sem juros',description:'10x de '+formatPrice((subtotal-discount+shipping)/10)},{id:'pix',label:'Pix — 5% OFF adicional',description:'Total '+formatPrice(Math.max(0,subtotal-discount)*.95+shipping)},{id:'boleto',label:'Boleto à vista',description:'Total '+formatPrice(subtotal-discount+shipping)}] as const).map(m=><label key={m.id} className="flex items-center gap-3 rounded-lg bg-slate-50 p-3 text-sm"><input type="radio" name="payment" checked={paymentMethod===m.id} onChange={()=>setPaymentMethod(m.id)}/><span className="flex-1 font-semibold">{m.label}</span><span className="text-xs text-slate-500">{m.description}</span></label>)}</div></fieldset>
+              <div className="rounded-xl border border-orange-200 bg-orange-50 p-4"><label htmlFor="checkout-coupon" className="flex items-center gap-2 text-sm font-black text-orange-900"><Tag size={17}/> Cupom de desconto</label><div className="mt-2 flex gap-2"><input id="checkout-coupon" value={couponInput} onChange={e=>setCouponInput(e.target.value.toUpperCase())} placeholder="Digite o código" className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm uppercase"/><button type="button" onClick={()=>applyCoupon(couponInput)} className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white">Aplicar</button></div><button type="button" onClick={()=>setCouponsOpen(true)} className="mt-2 text-xs font-bold text-orange-700 underline">Ver cupons disponíveis</button>{appliedCoupon&&<p className="mt-2 text-xs font-semibold text-emerald-700">{couponResult.error?couponResult.error:'Cupom '+appliedCoupon+' aplicado: -'+formatPrice(discount)} <button type="button" className="ml-2 underline" onClick={()=>{setAppliedCoupon('');setCouponInput('');}}>Remover</button></p>}</div>
             </div>
-            <div className="my-5 flex justify-between rounded-xl bg-slate-50 p-4 font-bold"><span className="text-slate-600">Total demonstrativo</span><span className="text-orange-600">{formatPrice(total)}</span></div>
+            <div className="my-5 space-y-2 rounded-xl bg-slate-50 p-4 text-sm"><div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div><div className="flex justify-between"><span>Frete ilustrativo</span><span>{shipping?formatPrice(shipping):'Grátis'}</span></div>{discount>0&&<div className="flex justify-between text-emerald-700"><span>Cupom</span><span>-{formatPrice(discount)}</span></div>}{pixDiscount>0&&<div className="flex justify-between text-emerald-700"><span>Desconto Pix</span><span>-{formatPrice(pixDiscount)}</span></div>}<div className="flex justify-between border-t pt-3 text-lg font-black"><span>Total demonstrativo</span><span className="text-orange-600">{formatPrice(total)}</span></div></div>
             <button type="submit" className="w-full rounded-xl bg-orange-600 py-3.5 font-bold text-white transition hover:bg-orange-700">Confirmar pedido de demonstração</button>
-            <p className="mt-3 text-center text-xs text-slate-400">Nenhum e-mail será enviado ou pagamento realizado.</p>
+            <p className="mt-3 text-center text-xs text-slate-400">Nenhum e-mail, boleto ou Pix será gerado. Checkout 100% ilustrativo.</p>
           </form>
         </div>
       )}
 
+
+      {couponsOpen && <div role="dialog" aria-modal="true" aria-label="Central de cupons" className="fixed inset-0 z-[135] flex items-center justify-center bg-slate-950/70 p-4">
+        <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
+          <div className="mb-5 flex items-start justify-between"><div><p className="text-xs font-black uppercase tracking-widest text-orange-600">Benefícios TechStore</p><h2 className="mt-2 text-2xl font-black">Central de cupons</h2><p className="mt-2 text-sm text-slate-500">Cupons de demonstração, sujeitos a categoria e compra mínima.</p></div><button onClick={()=>setCouponsOpen(false)} aria-label="Fechar cupons" className="rounded-full p-2 hover:bg-slate-100"><X/></button></div>
+          <div className="grid gap-3 sm:grid-cols-2">{coupons.map(c=><article key={c.code} className="rounded-2xl border-2 border-dashed border-orange-200 bg-orange-50/40 p-5"><div className="flex items-center gap-2 text-orange-600"><Gift size={20}/><span className="text-xs font-black uppercase">{c.label}</span></div><p className="mt-3 text-xl font-black tracking-wide">{c.code}</p><p className="mt-2 min-h-10 text-sm text-slate-600">{c.description}</p><button onClick={()=>{setCouponInput(c.code);setCouponsOpen(false);if(!checkoutOpen){setCartOpen(true);setNotice('Cupom '+c.code+' selecionado. Aplique-o no checkout após adicionar itens.');}}} className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-orange-600">Selecionar cupom →</button></article>)}</div>
+          <p className="mt-5 text-xs leading-5 text-slate-500">Cupons fictícios não cumulativos, descontos não reais. Os valores dependem dos itens selecionados.</p>
+        </div>
+      </div>}
+      {notificationsOpen && <div role="dialog" aria-modal="true" aria-label="Notificações da TechStore" className="fixed inset-0 z-[135] flex items-center justify-center bg-slate-950/70 p-4">
+        <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+          <div className="flex justify-between"><div><p className="text-xs font-black uppercase tracking-widest text-orange-600">Caixa de avisos</p><h2 className="mt-2 text-2xl font-black">Notificações</h2></div><button aria-label="Fechar avisos" onClick={()=>setNotificationsOpen(false)}><X/></button></div>
+          <div className="mt-6 space-y-4">
+            <div className="flex gap-3 rounded-xl border p-4"><Gift className="shrink-0 text-orange-600"/><div><h3 className="font-bold">Cupons de demonstração</h3><p className="mt-1 text-sm text-slate-500">Confira os códigos TECH10, GAMER15 e outros.</p><button onClick={()=>{setNotificationsOpen(false);setCouponsOpen(true);}} className="mt-2 text-sm font-bold text-orange-700">Ver cupons →</button></div></div>
+            <div className="flex gap-3 rounded-xl border p-4"><Cpu className="shrink-0 text-orange-600"/><div><h3 className="font-bold">Novidade: monte seu PC</h3><p className="mt-1 text-sm text-slate-500">Escolha componentes e veja o valor ilustrativo.</p><button onClick={()=>{setNotificationsOpen(false);setBuilderOpen(true);}} className="mt-2 text-sm font-bold text-orange-700">Começar →</button></div></div>
+            <div className="flex gap-3 rounded-xl border p-4"><Bell className="shrink-0 text-orange-600"/><div><h3 className="font-bold">Sua lista de favoritos</h3><p className="mt-1 text-sm text-slate-500">{favorites.length} produtos salvos localmente.</p></div></div>
+          </div>
+          <p className="mt-5 text-xs text-slate-400">Avisos fixos de demonstração; não são notificações em tempo real.</p>
+        </div>
+      </div>}
+      {builderOpen && <PCBuilder products={products} onClose={()=>setBuilderOpen(false)} onAddBuild={addBuildToCart}/>}
       {orderCode && (
         <div role="status" className="fixed bottom-5 right-5 z-[90] max-w-sm rounded-2xl bg-emerald-600 p-5 text-white shadow-xl">
           <div className="flex items-center gap-2 font-bold"><CheckCircle2 /> Pedido registrado!</div>
