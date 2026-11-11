@@ -6,6 +6,7 @@ import { information } from './information';
 import { administration } from './administration';
 import { catalog } from './catalog';
 import { remaining } from './remaining';
+import { marketing } from './marketing';
 
 export type Locale = 'pt-BR' | 'en' | 'es' | 'fr';
 const variants = [
@@ -14,7 +15,7 @@ const variants = [
   { value:'es' as Locale, label:'Español', flag:'🇪🇸', short:'ES' },
   { value:'fr' as Locale, label:'Français', flag:'🇫🇷', short:'FR' }
 ];
-const dictionary={...phrases,...details,...information,...administration,...catalog,...remaining};
+const dictionary={...phrases,...details,...information,...administration,...catalog,...remaining,...marketing};
 const indexes:Record<Exclude<Locale,'pt-BR'>,number>={en:0,es:1,fr:2};
 const localeStorageKey='techstore_language_v1';
 const normalizeLocale=(source:string|null):Locale|null=>{
