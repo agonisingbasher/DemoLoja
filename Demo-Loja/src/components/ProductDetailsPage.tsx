@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { ArrowLeft, BadgePercent, CheckCircle2, ChevronRight, Clock3, CreditCard, Heart, MapPin, PackageCheck, ShieldCheck, ShoppingCart, Star, Truck } from 'lucide-react';
+import { ArrowLeft, BadgePercent, ChevronRight, Clock3, CreditCard, Heart, MapPin, PackageCheck, ShieldCheck, ShoppingCart, Star, Truck } from 'lucide-react';
 import type { Product } from '../lib/supabase';
 import { Footer } from './Footer';
 import { ProductCard } from './ProductCard';
