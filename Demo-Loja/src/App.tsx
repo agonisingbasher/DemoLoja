@@ -204,7 +204,7 @@ export default function App() {
     const term=search.trim().toLocaleLowerCase(language);
     const result = products.filter((product) => {
       const matchesCategory = !category || product.category_id === category;
-      const texts=[product.name,product.description,product.details,...product.features];
+      const texts=[product.name,product.description,product.details,...(product.features||[])].filter((value): value is string => typeof value==='string');
       const matchesTerm = !term || texts.some(value=>value.toLocaleLowerCase(language).includes(term)||translate(value,locale).toLocaleLowerCase(language).includes(term));
       const matchesFavorite = !favoritesOnly || favorites.includes(product.id);
       return matchesCategory && matchesTerm && matchesFavorite;
