@@ -28,14 +28,14 @@ O carrinho, preferências e parte da administração continuam armazenados no na
 
 ## Idiomas disponíveis
 
-A interface TechStore oferece **quatro idiomas**, com seleção por bandeira no topo e acesso rápido persistente nas subpáginas e modais:
+A interface TechStore oferece **quatro idiomas**, usando o mesmo padrão visual do portfólio: botões **PT · EN · ES · FR** lado a lado, sempre visíveis, com o idioma ativo destacado. Não há menu suspenso. O seletor aparece no topo da vitrine e permanece acessível nas subpáginas e modais:
 
 - 🇧🇷 Português: https://agonisingbasher.github.io/DemoLoja/?lang=pt-BR#topo
 - 🇪🇸 Español: https://agonisingbasher.github.io/DemoLoja/?lang=es#topo
 - 🇺🇸 English: https://agonisingbasher.github.io/DemoLoja/?lang=en#topo
 - 🇫🇷 Français: https://agonisingbasher.github.io/DemoLoja/?lang=fr#topo
 
-A escolha fica no armazenamento local do navegador e na query string ?lang=, sem alterar o hash das rotas. O sistema traduz componentes da vitrine, descrições e características do catálogo, páginas de produto, carrinho, as seis etapas do checkout, página de cupons, montador de PC, login/conta, 2FA, rastreio de pedidos, modais, administração, rodapé e páginas institucionais.
+A escolha fica no armazenamento local do navegador e na query string ?lang=, sem alterar o hash das rotas. A preferência é sincronizada com a chave de idioma utilizada pelo portfólio AgonisingBasher. Na primeira visita, sem escolha prévia, o idioma do navegador é detectado. O sistema traduz componentes da vitrine, descrições e características do catálogo, páginas de produto, carrinho, as seis etapas do checkout, página de cupons, montador de PC, login/conta, 2FA, rastreio de pedidos, modais, administração, rodapé e páginas institucionais.
 
 Nomes comerciais, nomes de pessoas, dados fornecidos pelo usuário, códigos de cupons e identificadores técnicos são mantidos. Preços permanecem em BRL, com apresentação numérica apropriada ao idioma. Traduções de conteúdo cadastrado posteriormente no painel (como banners personalizados) devem ser revisadas manualmente.
 
