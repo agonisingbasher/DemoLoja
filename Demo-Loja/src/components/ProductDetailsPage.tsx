@@ -6,6 +6,7 @@ import { ProductCard } from './ProductCard';
 import { installments, money } from '../lib/promotions';
 import type { DemoSale } from './AdminPanel';
 import type { AccountProfile } from '../lib/customerAccount';
+import { supabase } from '../lib/supabase';
 
 export type LocalReview = { id: string; name: string; score: number; title: string; comment: string; date: string; accountId?:string; orderId?:string };
 type Props = {
@@ -20,10 +21,8 @@ function getReviews(productId:string):LocalReview[] {
     return Array.isArray(v)?v.filter((item:LocalReview)=>item.name&&item.comment && Number.isFinite(new Date(item.date).getTime()) && Date.now()-new Date(item.date).getTime()<7*86400000):[];
   }catch{return [];}
 }
-const demoExamples:LocalReview[] = [
-  {id:'sample-a',name:'Cliente exemplo • Camila',score:5,title:'Uma boa experiência de navegação',comment:'Avaliação fictícia para demonstrar como opiniões de compradores apareceriam nesta loja.',date:'2026-10-15'},
-  {id:'sample-b',name:'Cliente exemplo • Rafael',score:4,title:'Gostei dos detalhes do produto',comment:'Comentário ilustrativo. Em uma operação real, esta seção teria avaliações verificadas.',date:'2026-10-04'}
-];
+// Reviews come from completed demo orders. No fabricated customer testimonials.
+const demoExamples:LocalReview[] = [];
 export function ProductDetailsPage({product,products,orders,account,favorite,onToggleFavorite,onBack,onAddToCart,onViewProduct,onOpenCart,onInfoClick}:Props) {
   const [cep,setCep]=useState('');
   const [shipping,setShipping]=useState(false);
@@ -35,11 +34,31 @@ export function ProductDetailsPage({product,products,orders,account,favorite,onT
   const [showAllReviews,setShowAllReviews]=useState(false);
   const [infoTab,setInfoTab]=useState<'description'|'specs'>('description');
   const [reviewError,setReviewError]=useState('');
-  useEffect(()=>{setReviews(getReviews(product.id));setShipping(false);setCep('');window.scrollTo(0,0);},[product.id]);
+  useEffect(()=>{
+    setShipping(false);setCep('');window.scrollTo(0,0);
+    let mounted=true;
+    const load=async()=>{
+      if(supabase){
+        const {data,error}=await supabase.from('store_reviews')
+          .select('id,user_id,nickname,rating,title,comment,created_at')
+          .eq('product_id',product.id).order('created_at',{ascending:false});
+        if(!error && data){
+          if(mounted)setReviews(data.map(row=>({
+            id:row.id,name:row.nickname,accountId:row.user_id,score:row.rating,
+            title:row.title,comment:row.comment,date:row.created_at
+          })));
+          return;
+        }
+      }
+      if(mounted)setReviews(getReviews(product.id));
+    };
+    void load();
+    return ()=>{mounted=false;};
+  },[product.id]);
   const recommendations=products.filter(p=>p.id!==product.id && p.stock>0).sort((a,b)=>Number(b.category_id===product.category_id)-Number(a.category_id===product.category_id) || b.rating-a.rating).slice(0,4);
   const discount=product.original_price?Math.round((1-product.price/product.original_price)*100):0;
   const reviewList=[...reviews,...demoExamples];
-  const eligibleOrder=account?orders.find(order=>(order.userId===account.id || (!order.userId && order.email.trim().toLowerCase()===account.email.trim().toLowerCase())) && order.status!=='Cancelado' && order.items.some(item=>item.productId===product.id) && Date.now()-new Date(order.date).getTime()<7*86400000):undefined;
+  const eligibleOrder=account?orders.find(order=>(order.userId===account.id || (!order.userId && order.email.trim().toLowerCase()===account.email.trim().toLowerCase())) && order.status!=='Cancelado' && (account.demo || order.backendRecorded) && order.items.some(item=>item.productId===product.id) && Date.now()-new Date(order.date).getTime()<7*86400000):undefined;
   const alreadyReviewed=Boolean(account && reviews.some(r=>r.accountId===account.id || (!r.accountId && r.orderId===eligibleOrder?.id)));
   const canReview=Boolean(account && eligibleOrder && !alreadyReviewed);
   const summaries=[
@@ -48,14 +67,26 @@ export function ProductDetailsPage({product,products,orders,account,favorite,onT
     {title:'Compatibilidade',detail:(product.features||[]).find(f=>/compat|socket|ddr|interface|conex|plataforma|sistema|usb|pcie|suporte/i.test(f))||'Verifique modelo, conexões e requisitos de compatibilidade antes de escolher.'},
     {title:'Recursos e desempenho',detail:(product.features||[]).slice(2,4).join(' · ')||'Os recursos variam conforme a configuração e o fabricante.'}
   ];
-  const avg=reviewList.reduce((n,r)=>n+r.score,0)/reviewList.length;
-  const submitReview=(event:FormEvent<HTMLFormElement>)=>{
+  const avg=reviewList.length?reviewList.reduce((n,r)=>n+r.score,0)/reviewList.length:0;
+  const submitReview=async(event:FormEvent<HTMLFormElement>)=>{
     event.preventDefault();
-    if(!canReview || !account || !eligibleOrder){setReviewError('Só é possível avaliar um produto após concluir um pedido demonstrativo desse item nesta conta, e apenas uma vez.');return;}
-    if(!name.trim()||!message.trim())return;
-    const review={id:'review-'+Date.now(),name:name.trim().slice(0,32),score,title:headline.trim().slice(0,80)||'Minha avaliação',comment:message.trim().slice(0,1000),date:new Date().toISOString(),accountId:account.id,orderId:eligibleOrder.id};
-    const next=[review,...reviews];
-    setReviews(next);localStorage.setItem('techstore_reviews_v1_'+product.id,JSON.stringify(next));
+    if(!canReview || !account || !eligibleOrder){setReviewError('Só é possível avaliar uma vez, após concluir um pedido demonstrativo deste item com a conta conectada.');return;}
+    if(!name.trim() || !message.trim())return;
+    const review:LocalReview={id:'review-'+Date.now(),name:name.trim().slice(0,32),score,title:headline.trim().slice(0,80)||'Minha avaliação',comment:message.trim().slice(0,1000),date:new Date().toISOString(),accountId:account.id,orderId:eligibleOrder.id};
+    if(supabase && !account.demo){
+      const {data,error}=await supabase.from('store_reviews').insert({
+        product_id:product.id,user_id:account.id,nickname:review.name,
+        rating:review.score,title:review.title,comment:review.comment
+      }).select('id,created_at').single();
+      if(error){
+        setReviewError(error.code==='23505'?'Esta conta já avaliou este produto.':error.message);
+        return;
+      }
+      review.id=data.id;review.date=data.created_at;
+    }else{
+      const next=[review,...reviews];localStorage.setItem('techstore_reviews_v1_'+product.id,JSON.stringify(next));
+    }
+    setReviews(current=>[review,...current.filter(r=>r.accountId!==account.id)]);
     setName('');setHeadline('');setMessage('');setScore(5);setShowAllReviews(true);setReviewError('');
   };
   return <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -82,7 +113,7 @@ export function ProductDetailsPage({product,products,orders,account,favorite,onT
             <div className="mb-3 flex flex-wrap items-center gap-2"><span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-orange-700">TechStore Selection</span><span className="text-xs font-semibold text-slate-400">Cód: {product.id}</span></div>
             <h1 className="text-3xl font-black leading-tight tracking-tight sm:text-4xl">{product.name}</h1>
             <p className="mt-3 text-base leading-7 text-slate-600">{product.description}</p>
-            <div className="mt-4 flex flex-wrap items-center gap-2 text-sm"><div className="flex text-amber-500">{Array.from({length:5},(_,i)=><Star key={i} size={17} className={i<Math.round(avg)?'fill-current':''}/>)}</div><strong>{avg.toFixed(1)}</strong><a href="#avaliacoes" className="text-orange-600 hover:underline">{reviewList.length} avaliações demonstrativas</a><button onClick={()=>onToggleFavorite(product.id)} className="ml-auto flex items-center gap-1 font-bold text-slate-500 hover:text-rose-600"><Heart size={18} className={favorite?'fill-rose-500 text-rose-500':''}/> {favorite?'Salvo':'Favoritar'}</button></div>
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-sm"><div className="flex text-amber-500">{Array.from({length:5},(_,i)=><Star key={i} size={17} className={i<Math.round(avg)?'fill-current':''}/>)}</div><strong>{reviewList.length?avg.toFixed(1):'Sem nota'}</strong><a href="#avaliacoes" className="text-orange-600 hover:underline">{reviewList.length} avaliações demonstrativas</a><button onClick={()=>onToggleFavorite(product.id)} className="ml-auto flex items-center gap-1 font-bold text-slate-500 hover:text-rose-600"><Heart size={18} className={favorite?'fill-rose-500 text-rose-500':''}/> {favorite?'Salvo':'Favoritar'}</button></div>
 
             <section className="mt-7 rounded-2xl border bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-black text-slate-900">Sobre o produto</h2><span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">Resumo elaborado com IA a partir do catálogo</span></div>
@@ -119,9 +150,9 @@ export function ProductDetailsPage({product,products,orders,account,favorite,onT
       </div>
       <section className="border-y bg-white py-12" id="avaliacoes">
         <div className="mx-auto max-w-7xl px-4">
-          <div className="mb-7 flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-extrabold uppercase tracking-widest text-orange-600">Comunidade</p><h2 className="mt-1 text-3xl font-black">Avaliações e comentários</h2><p className="mt-2 text-sm text-slate-500">Exemplos fictícios identificados + opiniões locais enviadas neste navegador. Não são compras verificadas.</p></div><div className="rounded-xl bg-slate-100 px-5 py-3"><p className="text-3xl font-black">{avg.toFixed(1)} <span className="text-base text-slate-500">/ 5</span></p><p className="text-xs text-slate-500">{reviewList.length} avaliações demonstrativas</p></div></div>
+          <div className="mb-7 flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-extrabold uppercase tracking-widest text-orange-600">Comunidade</p><h2 className="mt-1 text-3xl font-black">Avaliações e comentários</h2><p className="mt-2 text-sm text-slate-500">Avaliações de contas que concluíram pedidos simulados deste produto. Não representam compras reais. Histórico de demonstração removido após sete dias.</p></div><div className="rounded-xl bg-slate-100 px-5 py-3"><p className="text-3xl font-black">{reviewList.length?avg.toFixed(1):'—'} <span className="text-base text-slate-500">/ 5</span></p><p className="text-xs text-slate-500">{reviewList.length} avaliações demonstrativas</p></div></div>
           <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr]">
-            <div className="space-y-4">{reviewList.slice(0,showAllReviews?undefined:3).map(r=><article key={r.id} className="rounded-2xl border p-5"><div className="flex flex-wrap justify-between gap-2"><p className="font-bold">{r.name}</p><span className="flex gap-1 text-amber-500">{Array.from({length:5},(_,i)=><Star key={i} size={15} className={i<r.score?'fill-current':''}/>)}</span></div><p className="mt-2 font-black">{r.title}</p><p className="mt-2 text-sm leading-6 text-slate-600">{r.comment}</p><div className="mt-3 flex items-center gap-1 text-xs text-slate-400"><Clock3 size={13}/>{new Date(r.date).toLocaleDateString('pt-BR')} · {r.id.startsWith('sample')?'Exemplo fictício':'Enviado neste navegador'}</div></article>)}<button onClick={()=>setShowAllReviews(v=>!v)} className="text-sm font-bold text-orange-700 hover:underline">{showAllReviews?'Mostrar menos':'Ver todos os comentários'} ({reviewList.length})</button></div>
+            <div className="space-y-4">{!reviewList.length&&<p className="rounded-xl border bg-slate-50 p-6 text-sm text-slate-500">Ainda não há avaliações deste produto. Quem concluir um pedido demonstrativo poderá escrever a primeira.</p>}{reviewList.slice(0,showAllReviews?undefined:3).map(r=><article key={r.id} className="rounded-2xl border p-5"><div className="flex flex-wrap justify-between gap-2"><p className="font-bold">{r.name}</p><span className="flex gap-1 text-amber-500">{Array.from({length:5},(_,i)=><Star key={i} size={15} className={i<r.score?'fill-current':''}/>)}</span></div><p className="mt-2 font-black">{r.title}</p><p className="mt-2 text-sm leading-6 text-slate-600">{r.comment}</p><div className="mt-3 flex items-center gap-1 text-xs text-slate-400"><Clock3 size={13}/>{new Date(r.date).toLocaleDateString('pt-BR')} · {r.id.startsWith('sample')?'Exemplo fictício':'Enviado neste navegador'}</div></article>)}<button onClick={()=>setShowAllReviews(v=>!v)} className="text-sm font-bold text-orange-700 hover:underline">{showAllReviews?'Mostrar menos':'Ver todos os comentários'} ({reviewList.length})</button></div>
             {canReview?<form onSubmit={submitReview} className="h-fit rounded-2xl bg-slate-50 p-5"><h3 className="text-lg font-black">Avalie seu produto</h3><p className="mt-1 text-xs text-slate-500">Você concluiu um pedido demonstrativo deste item. Sua avaliação é publicada apenas neste navegador e expira em sete dias.</p><label className="mt-4 block text-sm font-semibold">Apelido<input maxLength={32} required value={name} onChange={e=>setName(e.target.value)} className="mt-1.5 w-full rounded-xl border bg-white px-3 py-2.5" placeholder="Seu apelido"/></label><label className="mt-3 block text-sm font-semibold">Nota<select value={score} onChange={e=>setScore(Number(e.target.value))} className="mt-1.5 w-full rounded-xl border bg-white px-3 py-2.5">{[5,4,3,2,1].map(n=><option key={n} value={n}>{n} estrela{n>1?'s':''}</option>)}</select></label><label className="mt-3 block text-sm font-semibold">Título<input maxLength={80} value={headline} onChange={e=>setHeadline(e.target.value)} className="mt-1.5 w-full rounded-xl border bg-white px-3 py-2.5"/></label><label className="mt-3 block text-sm font-semibold">Comentário<textarea required maxLength={1000} rows={4} value={message} onChange={e=>setMessage(e.target.value)} className="mt-1.5 w-full rounded-xl border bg-white px-3 py-2.5"/></label>{reviewError&&<p role="alert" className="mt-3 text-sm text-rose-700">{reviewError}</p>}<button className="mt-4 w-full rounded-xl bg-orange-600 px-5 py-3 font-bold text-white hover:bg-orange-700">Publicar minha avaliação</button></form>:<aside className="h-fit rounded-2xl border border-orange-100 bg-orange-50 p-6"><h3 className="text-lg font-black text-slate-900">{alreadyReviewed?'Você já avaliou este produto':'Avaliações exclusivas de compradores'}</h3><p className="mt-2 text-sm leading-7 text-slate-600">{alreadyReviewed?'Obrigado por avaliar. Permitimos somente uma avaliação por produto e por conta.':!account?'Entre ou crie uma conta para acompanhar seus pedidos e avaliar os itens depois de concluir uma compra demonstrativa.':'Depois de concluir um pedido demonstrativo deste produto com esta conta, você poderá avaliá-lo uma vez.'}</p><p className="mt-3 text-xs text-slate-500">Não são avaliações de compras reais verificadas. As avaliações locais são apagadas após sete dias.</p></aside>}
           </div>
         </div>
