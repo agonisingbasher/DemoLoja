@@ -8,6 +8,7 @@ import { catalog } from './catalog';
 import { remaining } from './remaining';
 import { marketing } from './marketing';
 import { pcCatalog } from './pcCatalog';
+import { runtime } from './runtime';
 
 export type Locale = 'pt-BR' | 'en' | 'es' | 'fr';
 const variants = [
@@ -16,7 +17,7 @@ const variants = [
   { value:'es' as Locale, label:'Español', flag:'🇪🇸', short:'ES' },
   { value:'fr' as Locale, label:'Français', flag:'🇫🇷', short:'FR' }
 ];
-const dictionary={...phrases,...details,...information,...administration,...catalog,...remaining,...marketing,...pcCatalog};
+const dictionary={...phrases,...details,...information,...administration,...catalog,...remaining,...marketing,...pcCatalog,...runtime};
 const indexes:Record<Exclude<Locale,'pt-BR'>,number>={en:0,es:1,fr:2};
 const localeStorageKey='techstore_language_v1';
 const normalizeLocale=(source:string|null):Locale|null=>{
