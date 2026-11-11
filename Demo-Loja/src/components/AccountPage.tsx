@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { ArrowLeft, CircleUserRound, ClipboardList, Home, LockKeyhole, LogOut, MapPin, ShieldCheck, UserRoundPlus, UserRound } from 'lucide-react';
+import { ArrowLeft, CircleUserRound, ClipboardList, Home, LockKeyhole, LogOut, MapPin, RefreshCw, ShieldCheck, UserRoundPlus, UserRound } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { profileFromUser, type AccountProfile, type DeliveryAddress } from '../lib/customerAccount';
 import type { DemoSale } from './AdminPanel';
+import { OrderTracking } from './OrderTracking';
 import { money } from '../lib/promotions';
 import { Footer } from './Footer';
 
@@ -25,6 +26,50 @@ export function AccountPage({account,orders,initialTab='profile',onBack,onChange
   const [address,setAddress]=useState<DeliveryAddress>(account?.address||blankAddress);
   const [message,setMessage]=useState('');
   const [busy,setBusy]=useState(false);
+  const [remoteOrders,setRemoteOrders]=useState<DemoSale[]>([]);
+  const [loadingOrders,setLoadingOrders]=useState(false);
+  const [ordersError,setOrdersError]=useState('');
+  const [reloadOrders,setReloadOrders]=useState(0);
+  const [clock,setClock]=useState(()=>Date.now());
+  const [expandedOrders,setExpandedOrders]=useState<string[]>([]);
+  useEffect(()=>{
+    const clockId=window.setInterval(()=>setClock(Date.now()),15000);
+    return ()=>window.clearInterval(clockId);
+  },[]);
+  useEffect(()=>{
+    if(!account || account.demo || !supabase){setRemoteOrders([]);setOrdersError('');setLoadingOrders(false);return;}
+    const client=supabase;
+    const userId=account.id;
+    let alive=true;
+    const load=async()=>{
+      setLoadingOrders(true);setOrdersError('');
+      const {data,error}=await client.from('customer_orders')
+        .select('id,reference,user_id,amount,discount,shipping,status,payment_method,created_at,customer_order_items(product_id,product_name,quantity,unit_price)')
+        .eq('user_id',userId)
+        .gte('created_at',new Date(Date.now()-7*24*60*60*1000).toISOString())
+        .order('created_at',{ascending:false}).limit(100);
+      if(!alive)return;
+      if(error){setOrdersError('Não foi possível sincronizar os pedidos do Supabase: '+error.message);}
+      else if(data){
+        const mapped:DemoSale[]=data.map(row=>{
+          const dbItems=Array.isArray(row.customer_order_items)?row.customer_order_items:[];
+          return {
+            id:row.reference,
+            customer:account.name,email:account.email,userId:row.user_id,backendRecorded:true,
+            date:row.created_at,total:Number(row.amount),discount:Number(row.discount),shipping:Number(row.shipping),
+            status:row.status==='cancelled'?'Cancelado':'Recebido',
+            paymentMethod:row.payment_method,
+            items:dbItems.map(item=>({productId:item.product_id,name:item.product_name,quantity:item.quantity,unitPrice:Number(item.unit_price)}))
+          } as DemoSale;
+        });
+        setRemoteOrders(mapped);
+      }
+      setLoadingOrders(false);
+    };
+    void load();
+    const refresh=window.setInterval(()=>{void load();},90000);
+    return ()=>{alive=false;window.clearInterval(refresh);};
+  },[account?.id,account?.demo,reloadOrders]);
   useEffect(()=>{setName(account?.name||'');setEmail(account?.email||'');setPhone(account?.phone||'');setAddress(account?.address||blankAddress);},[account]);
   const handleAuth=async(event:FormEvent<HTMLFormElement>)=>{
     event.preventDefault();setMessage('');setBusy(true);
@@ -74,11 +119,18 @@ export function AccountPage({account,orders,initialTab='profile',onBack,onChange
     catch(err){setMessage(err instanceof Error?err.message:'Não foi possível sair.');}
     finally{setBusy(false);}
   };
-  const userOrders=account?orders.filter(order=>{
+  const localOrders=account?orders.filter(order=>{
     if (order.userId) return order.userId===account.id;
-    // Backwards compatibility for purchases created before account linkage.
     return order.email.trim().toLowerCase()===account.email.trim().toLowerCase();
-  }).sort((a,b)=>new Date(b.date).getTime()-new Date(a.date).getTime()):[];
+  }):[];
+  const orderMap=new Map<string,DemoSale>();
+  remoteOrders.forEach(order=>orderMap.set(order.id,order));
+  localOrders.forEach(order=>{
+    const remote=orderMap.get(order.id);
+    // The server proves that an order exists; the local demo can retain a manual preview status.
+    orderMap.set(order.id,remote?{...remote,...order,backendRecorded:true,items:remote.items.length?remote.items:order.items}:order);
+  });
+  const userOrders=[...orderMap.values()].sort((a,b)=>new Date(b.date).getTime()-new Date(a.date).getTime());
   return <div className="min-h-screen bg-[#f3f6fb] text-slate-900">
     <div className="bg-[#08152e] p-2 text-center text-xs text-slate-200">TechStore · Identidade demonstrativa · Não forneça dados pessoais reais no modo de teste</div>
     <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0c285a] text-white"><div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4"><button onClick={onBack} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold hover:bg-white/10"><ArrowLeft size={18}/> Voltar à loja</button><button onClick={onBack} className="text-xl font-black">Tech<span className="text-orange-400">Store</span></button><span className="hidden items-center gap-2 text-xs font-bold sm:flex"><LockKeyhole size={17}/> Espaço do cliente</span></div></header>
@@ -109,7 +161,19 @@ export function AccountPage({account,orders,initialTab='profile',onBack,onChange
               {([['street','Endereço'],['number','Número'],['complement','Complemento'],['district','Bairro'],['city','Cidade'],['state','Estado (UF)'],['cep','CEP']] as [keyof DeliveryAddress,string][]).map(([key,label])=><label key={key} className={'block text-sm font-bold '+(key==='street'?'sm:col-span-2':'')}>{label}<input value={address[key]} onChange={e=>setAddress(x=>({...x,[key]:key==='cep'?cepMask(e.target.value):key==='state'?e.target.value.toUpperCase().slice(0,2):e.target.value}))} placeholder={key==='cep'?'00000-000':''} className="mt-2 w-full rounded-xl border px-4 py-3"/></label>)}
             </div>}
             <div className="mt-6 flex flex-wrap items-center gap-4"><button disabled={busy} className="rounded-xl bg-orange-600 px-6 py-3 font-bold text-white disabled:opacity-50">Salvar alterações</button><span className="text-xs text-slate-500">{account.demo?'Dados somente neste navegador':'Dados gravados no perfil autenticado'}</span></div>
-          </form>:<div><h2 className="text-xl font-black">Meus pedidos demonstrativos</h2><p className="mt-2 text-sm text-slate-500">Pedidos associados a este e-mail apenas neste navegador. Não são compras reais.</p>{userOrders.length?<div className="mt-5 space-y-3">{userOrders.map(order=><article key={order.id} className="flex flex-wrap justify-between gap-4 rounded-xl border p-4"><div><p className="font-bold">{order.id}</p><p className="mt-1 text-xs text-slate-500">{new Date(order.date).toLocaleDateString('pt-BR')}</p></div><div><p className="font-black text-orange-700">{money(order.total)}</p><p className="text-xs text-slate-500">{order.status||'Recebido'}</p></div></article>)}</div>:<p className="mt-6 rounded-xl bg-slate-50 p-8 text-center text-sm text-slate-500">Nenhum pedido demonstrativo associado a este perfil.</p>}</div>}
+          </form>:<div>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div><h2 className="text-2xl font-black">Meus pedidos</h2><p className="mt-2 text-sm leading-6 text-slate-500">Acompanhe as etapas dos pedidos demonstrativos com um rastreamento visual, preparação e nota fiscal pendente.</p></div>
+              {!account.demo&&<button type="button" onClick={()=>setReloadOrders(n=>n+1)} disabled={loadingOrders} className="inline-flex items-center gap-2 rounded-xl border bg-white px-4 py-3 text-xs font-bold text-[#0c285a] hover:bg-slate-50 disabled:opacity-50"><RefreshCw size={16} className={loadingOrders?'animate-spin':''}/> Atualizar pedidos</button>}
+            </div>
+            <div className="mt-5 rounded-2xl border border-blue-100 bg-[#eff5fe] p-4 text-xs leading-6 text-[#153a73]">
+              <strong>Simulação acelerada:</strong> os pedidos avançam automaticamente por etapas fictícias em aproximadamente 16 minutos, quando não há alteração manual no painel de testes. Nota fiscal, postagem, transportadora, pagamento e entrega não são reais.
+              {!account.demo&&<span className="mt-1 block font-semibold">Pedidos vinculados à sua conta são consultados no Supabase e podem ser vistos em outros dispositivos.</span>}
+            </div>
+            {ordersError&&<p role="alert" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{ordersError}</p>}
+            {loadingOrders&&<p role="status" className="mt-4 text-sm text-slate-500">Sincronizando pedidos da sua conta...</p>}
+            {userOrders.length?<div className="mt-6 space-y-4">{userOrders.map((order,i)=><OrderTracking key={order.id} order={order} now={clock} expanded={expandedOrders.includes(order.id)||(i===0&&expandedOrders.length===0)} onToggle={()=>setExpandedOrders(current=>current.includes(order.id)?current.filter(id=>id!==order.id):[...current,order.id])}/>)}</div>:<div className="mt-6 rounded-2xl border border-dashed bg-slate-50 p-10 text-center"><ClipboardList size={36} className="mx-auto text-slate-300"/><p className="mt-4 font-bold">Nenhum pedido de demonstração encontrado</p><p className="mt-2 text-sm text-slate-500">Faça uma simulação de compra no catálogo para acompanhar cada etapa nesta página.</p></div>}
+          </div>}
           {message&&<p role="status" className="mt-5 rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-800">{message}</p>}
           <p className="mt-7 border-t pt-5 text-xs leading-6 text-slate-500">Os endereços do perfil servem apenas para demonstrar a interface. Se o login real estiver configurado, use dados apropriados e revise a política de privacidade.</p>
         </section>
