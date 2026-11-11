@@ -13,7 +13,7 @@ export function calculateCoupon(code: string, items: BasketItem[]): { discount: 
   const eligible = items.filter(item => !coupon.category || coupon.category === item.category_id).reduce((sum,item)=>sum+item.price*item.quantity,0);
   if (eligible <= 0) return { discount: 0, error: 'Nenhum item elegível para este cupom.' };
   const minimumBase = coupon.category ? eligible : subtotal;
-  if (minimumBase < coupon.minSubtotal) return { discount: 0, error: 'Valor mínimo em itens elegíveis: ' + coupon.minSubtotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) + '.' };
+  if (minimumBase < coupon.minSubtotal) return { discount: 0, error: 'Valor mínimo em itens elegíveis: ' + money(coupon.minSubtotal) + '.' };
   const base = coupon.type === 'percent' ? eligible * coupon.value / 100 : coupon.value;
   return { discount: Math.round(Math.min(eligible, base, coupon.maxDiscount ?? Infinity)*100)/100, error: '', coupon };
 }
