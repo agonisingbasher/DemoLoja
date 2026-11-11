@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowLeft, CircleUserRound, ClipboardList, Home, LockKeyhole, LogOut, MapPin, RefreshCw, ShieldCheck, UserRoundPlus, UserRound } from 'lucide-react';
+import { MFASecurity } from './MFASecurity';
 import { supabase } from '../lib/supabase';
 import { profileFromUser, type AccountProfile, type DeliveryAddress } from '../lib/customerAccount';
 import type { DemoSale } from './AdminPanel';
@@ -14,7 +15,7 @@ const blankAddress:DeliveryAddress={street:'',number:'',complement:'',district:'
 const digits=(s:string)=>s.replace(/\D/g,'');
 const cepMask=(s:string)=>digits(s).slice(0,8).replace(/^(\d{5})(\d)/,'$1-$2');
 type AuthTab='login'|'register';
-type ProfileTab='profile'|'address'|'orders';
+type ProfileTab='profile'|'address'|'orders'|'security';
 export function AccountPage({account,orders,initialTab='profile',onBack,onChange,onInfoClick}:Props){
   const [authTab,setAuthTab]=useState<AuthTab>('register');
   const [profileTab,setProfileTab]=useState<ProfileTab>(initialTab);
@@ -80,7 +81,10 @@ export function AccountPage({account,orders,initialTab='profile',onBack,onChange
           const {data,error}=await supabase.auth.signUp({email:email.trim(),password,options:{data:{full_name:name.trim()},emailRedirectTo:window.location.origin+import.meta.env.BASE_URL}});
           if(error)throw error;
           if(data.session&&data.user){onChange(profileFromUser(data.user));setMessage('Cadastro concluído. Verifique seu e-mail se a confirmação estiver ativada.');}
-          else setMessage('Cadastro solicitado. Se o serviço de autenticação e e-mail estiver configurado, você receberá instruções para confirmar seu endereço.');
+          else {
+            try{sessionStorage.setItem('techstore_confirmation_email',email.trim().toLowerCase());}catch{/* Private mode */}
+            window.location.hash='/confirmar-email';
+          }
         }else{
           const {data,error}=await supabase.auth.signInWithPassword({email:email.trim(),password});
           if(error)throw error;
@@ -146,15 +150,18 @@ export function AccountPage({account,orders,initialTab='profile',onBack,onChange
             {supabase&&<label className="block text-sm font-semibold">Senha<input required type="password" minLength={8} autoComplete={authTab==='register'?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Pelo menos 8 caracteres" className="mt-2 w-full rounded-xl border px-4 py-3"/></label>}
             <button disabled={busy} className="w-full rounded-xl bg-orange-600 px-5 py-4 font-black text-white hover:bg-orange-500 disabled:opacity-50">{busy?'Processando...':supabase?(authTab==='register'?'Criar minha conta':'Entrar na conta'):'Criar perfil local'}</button>
           </form>
+          {supabase&&<button type="button" onClick={()=>{try{sessionStorage.setItem('techstore_confirmation_email',email.trim().toLowerCase());}catch{/* Private mode */}window.location.hash='/confirmar-email';}} className="mt-4 w-full text-center text-sm font-bold text-orange-700 hover:underline">Não recebeu o e-mail? Confirmar por código ou reenviar</button>}
           {message&&<p role="status" className="mt-5 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">{message}</p>}
           {supabase&&<div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-sm font-bold text-amber-900">Quer apenas testar o site?</p><p className="mt-2 text-xs leading-6 text-amber-900">Se o envio de e-mails ainda não estiver habilitado, você pode criar um perfil local sem senha e sem mensagem de confirmação. Esse perfil não é uma conta autenticada e será limpo após sete dias.</p><button type="button" onClick={()=>{if(name.trim().length<2){setMessage('Digite um nome de teste antes de continuar.');return;}onChange({id:'demo-local',name:name.trim(),email:email.trim()||'demo@example.com',phone:'',address:null,demo:true});setMessage('Perfil local de teste criado. Nenhum e-mail foi enviado.');}} className="mt-3 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-amber-700">Usar perfil demonstrativo local</button></div>}
           {!supabase&&<p className="mt-5 rounded-xl bg-amber-50 p-4 text-xs leading-6 text-amber-900">A TechStore está hospedada no GitHub Pages. A autenticação real e o envio de e-mail dependem de configurar Supabase Auth e SMTP. Não use senha ou dados pessoais reais neste modo.</p>}
         </section>
         <aside className="rounded-2xl border bg-white p-6 shadow-sm"><h3 className="flex items-center gap-2 text-lg font-black"><ShieldCheck className="text-emerald-600"/> Uma experiência mais completa</h3><div className="mt-5 space-y-5">{[['01','Seu endereço','Visualize e altere um endereço salvo no seu perfil.'],['02','Histórico de pedidos','Consulte pedidos simulados registrados neste navegador.'],['03','Acesso personalizado','Veja seu nome e cidade de entrega na barra superior.']].map(([n,t,d])=><div key={n} className="flex gap-4"><span className="text-xl font-black text-orange-600">{n}</span><div><p className="font-black">{t}</p><p className="mt-1 text-sm leading-6 text-slate-500">{d}</p></div></div>)}</div></aside>
       </div>:<div className="grid items-start gap-6 lg:grid-cols-[235px_minmax(0,1fr)]">
-        <aside className="rounded-2xl border bg-white p-3 shadow-sm"><div className="border-b px-3 py-4"><CircleUserRound size={34} className="text-orange-600"/><p className="mt-2 font-black">{account.name}</p><p className="break-all text-xs text-slate-500">{account.email}</p><p className="mt-1 text-xs text-slate-400">{account.demo?'Perfil local demonstrativo':'Conta autenticada'}</p></div><nav className="mt-3 space-y-1">{([{id:'profile',label:'Meu perfil',icon:UserRound},{id:'address',label:'Meus endereços',icon:Home},{id:'orders',label:'Meus pedidos',icon:ClipboardList}] as const).map(({id,label,icon:Icon})=><button key={id} onClick={()=>{setProfileTab(id);setMessage('');}} className={'flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold '+(profileTab===id?'bg-orange-600 text-white':'hover:bg-orange-50 hover:text-orange-700')}><Icon size={19}/>{label}</button>)}</nav><button onClick={signOut} disabled={busy} className="mt-5 flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50"><LogOut size={18}/> Sair da conta</button></aside>
+        <aside className="rounded-2xl border bg-white p-3 shadow-sm"><div className="border-b px-3 py-4"><CircleUserRound size={34} className="text-orange-600"/><p className="mt-2 font-black">{account.name}</p><p className="break-all text-xs text-slate-500">{account.email}</p><p className="mt-1 text-xs text-slate-400">{account.demo?'Perfil local demonstrativo':'Conta autenticada'}</p></div><nav className="mt-3 space-y-1">{([{id:'profile',label:'Meu perfil',icon:UserRound},{id:'address',label:'Meus endereços',icon:Home},{id:'orders',label:'Meus pedidos',icon:ClipboardList},{id:'security',label:'Segurança · 2FA',icon:ShieldCheck}] as const).map(({id,label,icon:Icon})=><button key={id} onClick={()=>{setProfileTab(id);setMessage('');}} className={'flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold '+(profileTab===id?'bg-orange-600 text-white':'hover:bg-orange-50 hover:text-orange-700')}><Icon size={19}/>{label}</button>)}</nav><button onClick={signOut} disabled={busy} className="mt-5 flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50"><LogOut size={18}/> Sair da conta</button></aside>
         <section className="rounded-2xl border bg-white p-6 shadow-sm sm:p-8">
-          {profileTab!=='orders'?<form onSubmit={save}>
+          {profileTab==='security'?
+            (account.demo?<div className="rounded-xl bg-orange-50 p-6 text-sm text-orange-900">O perfil local é apenas demonstrativo. Para habilitar o 2FA, faça o cadastro e entre em uma conta autenticada no Supabase.</div>:<MFASecurity mode="settings"/>)
+          :profileTab!=='orders'?<form onSubmit={save}>
             <h2 className="flex items-center gap-2 text-xl font-black">{profileTab==='profile'?<UserRound className="text-orange-600"/>:<MapPin className="text-orange-600"/>}{profileTab==='profile'?'Dados da conta':'Meu endereço de entrega'}</h2>
             {profileTab==='profile'?<div className="mt-6 grid gap-4 sm:grid-cols-2"><label className="block text-sm font-bold">Nome<input required value={name} onChange={e=>setName(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3"/></label><label className="block text-sm font-bold">Celular (opcional)<input value={phone} onChange={e=>setPhone(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3"/></label><label className="block text-sm font-bold sm:col-span-2">E-mail cadastrado<input readOnly value={email} className="mt-2 w-full rounded-xl border bg-slate-100 px-4 py-3 text-slate-500"/></label></div>:<div className="mt-6 grid gap-4 sm:grid-cols-2">
               {([['street','Endereço'],['number','Número'],['complement','Complemento'],['district','Bairro'],['city','Cidade'],['state','Estado (UF)'],['cep','CEP']] as [keyof DeliveryAddress,string][]).map(([key,label])=><label key={key} className={'block text-sm font-bold '+(key==='street'?'sm:col-span-2':'')}>{label}<input value={address[key]} onChange={e=>setAddress(x=>({...x,[key]:key==='cep'?cepMask(e.target.value):key==='state'?e.target.value.toUpperCase().slice(0,2):e.target.value}))} placeholder={key==='cep'?'00000-000':''} className="mt-2 w-full rounded-xl border px-4 py-3"/></label>)}
