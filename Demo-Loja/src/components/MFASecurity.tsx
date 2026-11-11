@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Check, CheckCircle2, Copy, KeyRound, LockKeyhole, QrCode, Shield, ShieldCheck, ShieldOff, Smartphone, XCircle } from 'lucide-react';
+import { CheckCircle2, Copy, KeyRound, LockKeyhole, QrCode, Shield, ShieldCheck, ShieldOff, Smartphone } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 type Factor={id:string;friendly_name?:string|null;status:string};
