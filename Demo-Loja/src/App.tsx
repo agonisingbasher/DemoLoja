@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { ArrowRight, Bell, BadgePercent, CheckCircle2, Cpu, Gift, Heart, Minus, Plus, Search, ShieldCheck, ShoppingCart, Sparkles, Tag, Trash2, Truck, X, Zap } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, Bell, BadgePercent, CheckCircle2, Cpu, Gift, Heart, Search, ShieldCheck, Sparkles, Truck, X, Zap } from 'lucide-react';
 import { CategoryFilter } from './components/CategoryFilter';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
@@ -10,7 +10,12 @@ import { FooterInfoPage } from './components/FooterInfoPage';
 import { ProductDetailsPage } from './components/ProductDetailsPage';
 import { PCBuilder } from './components/PCBuilder';
 import { categoryIcons } from './components/CategoryFilter';
-import { calculateCoupon, coupons } from './lib/promotions';
+import { CheckoutPage, type CheckoutSubmission } from './components/CheckoutPage';
+import { CouponCenterPage } from './components/CouponCenterPage';
+import { AccountPage } from './components/AccountPage';
+import { defaultCouponBanner, couponBannerKey, type CouponBanner } from './lib/couponBanner';
+import { loadDemoAccount, saveDemoAccount, profileFromUser, type AccountProfile } from './lib/customerAccount';
+import { supabase } from './lib/supabase';
 import { catalogProducts } from './lib/catalogProducts';
 import type { Category, Product } from './lib/supabase';
 
@@ -41,7 +46,6 @@ const categories: Category[] = [
   { id: 'cadeiras', name: 'Cadeiras', slug: 'cadeiras', created_at: '' },
   { id: 'componentes', name: 'Peças para PC', slug: 'componentes', created_at: '' },
 ];
-const formatPrice = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 function readStorage<T,>(key: string, fallback: T): T {
   try {
     const stored = localStorage.getItem(key);
@@ -76,16 +80,15 @@ export default function App() {
   const [sort, setSort] = useState('featured');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [page, setPage] = useState(1);
-  const [couponsOpen, setCouponsOpen] = useState(false);
+  const [couponsPage, setCouponsPage] = useState(() => window.location.hash === '#/cupons');
+  const [accountPage, setAccountPage] = useState(() => window.location.hash === '#/minha-conta');
+  const [accountTab, setAccountTab] = useState<'profile'|'address'|'orders'>('profile');
+  const [account, setAccount] = useState<AccountProfile|null>(() => supabase ? null : loadDemoAccount());
+  const [couponBanner, setCouponBanner] = useState<CouponBanner>(() => readStorage(couponBannerKey, defaultCouponBanner));
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [couponInput, setCouponInput] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState('');
-  const [delivery, setDelivery] = useState<'economico'|'expresso'|'retirada'>('economico');
-  const [checkoutCep, setCheckoutCep] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'card'|'pix'|'boleto'>('card');
-  const [cartOpen, setCartOpen] = useState(false);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(() => window.location.hash === '#/checkout');
   const [notice, setNotice] = useState('');
   const [orderCode, setOrderCode] = useState('');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
@@ -96,12 +99,31 @@ export default function App() {
   useEffect(() => { localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products)); }, [products]);
   useEffect(() => { localStorage.setItem(SALES_KEY, JSON.stringify(sales)); }, [sales]);
   useEffect(() => { localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites)); }, [favorites]);
+  useEffect(() => { localStorage.setItem(couponBannerKey, JSON.stringify(couponBanner)); }, [couponBanner]);
   useEffect(() => {
-    const onHashChange = () => setInfoTopic(topicFromHash(window.location.hash));
+    if (!supabase) return;
+    supabase.auth.getUser().then(({data})=>setAccount(data.user?profileFromUser(data.user):null)).catch(()=>setAccount(null));
+    const {data:{subscription}} = supabase.auth.onAuthStateChange((_event, session)=>{
+      setAccount(session?.user?profileFromUser(session.user):null);
+    });
+    return ()=>subscription.unsubscribe();
+  }, []);
+  const updateAccount=(profile:AccountProfile|null)=>{
+    setAccount(profile);
+    if(!supabase)saveDemoAccount(profile);
+  };
+  useEffect(() => {
+    const onHashChange = () => {
+      const hash=window.location.hash;
+      setInfoTopic(topicFromHash(hash));
+      setCouponsPage(hash==='#/cupons');
+      setAccountPage(hash==='#/minha-conta');
+      setCheckoutOpen(hash==='#/checkout');
+    };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
-  useEffect(() => { if (infoTopic) window.scrollTo(0, 0); }, [infoTopic]);
+  useEffect(() => { if (infoTopic||couponsPage||accountPage||checkoutOpen) window.scrollTo(0, 0); }, [infoTopic,couponsPage,accountPage,checkoutOpen]);
   useEffect(() => {
     if (!notice) return;
     const timer = window.setTimeout(() => setNotice(''), 2600);
@@ -135,24 +157,12 @@ export default function App() {
     .map((line) => ({ ...line, product: products.find((product) => product.id === line.productId) }))
     .filter((line): line is CartLine & { product: Product } => Boolean(line.product));
   const itemCount = cart.reduce((sum, line) => sum + line.quantity, 0);
-  const subtotal = cartProducts.reduce((sum, line) => sum + line.product.price * line.quantity, 0);
-  const shipping = !subtotal || delivery==='retirada' ? 0 : delivery==='expresso' ? 34.90 : subtotal>=499 ? 0 : 19.90;
-  const couponResult = appliedCoupon ? calculateCoupon(appliedCoupon, cartProducts.map(({product,quantity})=>({category_id:product.category_id,price:product.price,quantity}))) : {discount:0,error:''};
-  const discount = couponResult.discount;
-  const pixDiscount = paymentMethod==='pix' ? Math.round(Math.max(0,subtotal-discount)*5)/100 : 0;
-  const total = Math.max(0,subtotal-discount-pixDiscount)+shipping;
-  const applyCoupon=(code:string)=>{
-    const result=calculateCoupon(code,cartProducts.map(({product,quantity})=>({category_id:product.category_id,price:product.price,quantity})));
-    if(result.error){setNotice(result.error);return;}
-    setAppliedCoupon(code.trim().toUpperCase());setCouponInput(code.trim().toUpperCase());
-    setCouponsOpen(false);setNotice('Cupom demonstrativo '+code.toUpperCase()+' aplicado!');
-  };
   const addBuildToCart=(ids:string[])=>{
     if(!ids.length)return;
     const current = new Map(cart.map(item=>[item.productId,item.quantity]));
     if(ids.some(id=>{const p=products.find(product=>product.id===id);return !p || (current.get(id)||0)+ids.filter(x=>x===id).length>p.stock;})){setNotice('Confira o estoque disponível dos itens selecionados.');return;}
     setCart(old=>{const next=new Map(old.map(line=>[line.productId,line.quantity]));ids.forEach(id=>next.set(id,(next.get(id)||0)+1));return Array.from(next,([productId,quantity])=>({productId,quantity}));});
-    setBuilderOpen(false);setCartOpen(true);setNotice('Montagem adicionada ao carrinho de demonstração.');
+    setBuilderOpen(false);setCheckoutOpen(true);window.location.hash='/checkout';setNotice('Montagem adicionada ao checkout de demonstração.');
   };
 
   const addToCart = (productId: string) => {
@@ -192,36 +202,32 @@ export default function App() {
       : [...current, productId]);
   };
 
-  const finishDemoOrder = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!cartProducts.length) return;
-    const form = new FormData(event.currentTarget);
-    const sale: DemoSale = {
-      id: `TS-${Date.now().toString().slice(-8)}`,
-      customer: String(form.get('customer') || 'Cliente demonstrativo'),
-      email: String(form.get('email') || 'sem-email@demo.local'),
-      date: new Date().toISOString(),
-      total, status:'Recebido', paymentMethod, couponCode:appliedCoupon||undefined, discount:discount+pixDiscount, shipping,
-      items: cartProducts.map(({ product, quantity }) => ({ productId: product.id, name: product.name, quantity, unitPrice: product.price })),
+  const finishDemoOrder = (payload:CheckoutSubmission):string => {
+    const sale:DemoSale = {
+      id:'TS-'+Date.now().toString().slice(-8),
+      customer:payload.customer, email:payload.email,
+      date:new Date().toISOString(), total:payload.total,
+      status:'Recebido', paymentMethod:payload.paymentMethod,
+      couponCode:payload.couponCode, discount:payload.discount, shipping:payload.shipping,
+      items:cartProducts.map(({product,quantity})=>({productId:product.id,name:product.name,quantity,unitPrice:product.price})),
     };
-    setSales(current => [...current, sale]);
-    setProducts(current => current.map(product => {
-      const soldLine = cartProducts.find(line => line.product.id === product.id);
-      return soldLine ? { ...product, stock: Math.max(0, product.stock - soldLine.quantity) } : product;
+    setSales(current=>[...current,sale]);
+    setProducts(current=>current.map(product=>{
+      const line=cartProducts.find(item=>item.product.id===product.id);
+      return line?{...product,stock:Math.max(0,product.stock-line.quantity)}:product;
     }));
-    setOrderCode(sale.id);
-    setCart([]);
-    setCheckoutOpen(false);
-    setCartOpen(false);
-    setAppliedCoupon('');setCouponInput('');setPaymentMethod('card');setDelivery('economico');setCheckoutCep('');
-    setNotice('Pedido demonstrativo concluído!');
+    setCart([]);setOrderCode(sale.id);setCouponInput('');
+    return sale.id;
   };
-
+  const openCheckout=()=>{setSelectedProductId(null);setCouponsPage(false);setAccountPage(false);setCheckoutOpen(true);window.location.hash='/checkout';window.scrollTo(0,0);};
+  const openCoupons=()=>{setCouponsPage(true);setAccountPage(false);setCheckoutOpen(false);setSelectedProductId(null);window.location.hash='/cupons';window.scrollTo(0,0);};
+  const openAccount=(tab:'profile'|'address'|'orders'='profile')=>{setAccountTab(tab);setAccountPage(true);setCouponsPage(false);setCheckoutOpen(false);setSelectedProductId(null);window.location.hash='/minha-conta';window.scrollTo(0,0);};
+  const closeSpecial=()=>{setCouponsPage(false);setAccountPage(false);setCheckoutOpen(false);window.location.hash='topo';window.scrollTo(0,0);};
   const openInfo = (topic: string) => {
     const slug = footerRoutes[topic];
     if (!slug) return;
     window.location.hash = '/' + slug;
-    setInfoTopic(topic);
+    setInfoTopic(topic);setCouponsPage(false);setAccountPage(false);setCheckoutOpen(false);setSelectedProductId(null);
     window.scrollTo(0, 0);
   };
   const closeInfo = () => {
@@ -231,27 +237,36 @@ export default function App() {
   };
   // Information and detail pages are first-class views with their own footer.
   if (infoTopic) return <FooterInfoPage topic={infoTopic} onBack={closeInfo} onNavigate={openInfo} />;
+  if (checkoutOpen) return <CheckoutPage items={cartProducts} initialCoupon={couponInput} account={account}
+    onBack={closeSpecial} onQuantityChange={changeQuantity}
+    onRemove={id=>setCart(current=>current.filter(line=>line.productId!==id))}
+    onFinish={finishDemoOrder} onCompleted={closeSpecial}/>;
+  if (couponsPage) return <CouponCenterPage banner={couponBanner} cartCount={itemCount} onBack={closeSpecial}
+    onSelect={code=>{setCouponInput(code);if(itemCount)openCheckout();else{closeSpecial();setNotice('Cupom '+code+' selecionado. Adicione produtos e abra o checkout.');}}}
+    onInfoClick={openInfo}/>;
+  if (accountPage) return <AccountPage account={account} initialTab={accountTab} orders={sales} onBack={closeSpecial} onChange={updateAccount} onInfoClick={openInfo}/>;
   if (selectedProduct) return <ProductDetailsPage
     product={selectedProduct} products={products} favorite={favorites.includes(selectedProduct.id)}
     onToggleFavorite={toggleFavorite} onBack={()=>{setSelectedProductId(null);window.scrollTo(0,0);}}
-    onAddToCart={id=>{addToCart(id);setSelectedProductId(null);setCartOpen(true);}}
+    onAddToCart={id=>{addToCart(id);openCheckout();}}
     onViewProduct={id=>{setSelectedProductId(id);window.scrollTo(0,0);}}
-    onOpenCart={()=>{setSelectedProductId(null);setCartOpen(true);}}
+    onOpenCart={openCheckout}
     onInfoClick={topic=>{setSelectedProductId(null);openInfo(topic);}}
   />;
   return (
     <div id="topo" className="min-h-screen bg-slate-50">
       <Header
-        onCartClick={() => setCartOpen(true)}
+        onCartClick={openCheckout}
         cartItemsCount={itemCount}
         onLoginClick={() => setLoginOpen(true)}
         searchTerm={search}
         onSearchChange={setSearch}
         onBuilderClick={()=>setBuilderOpen(true)}
-        onCouponsClick={()=>setCouponsOpen(true)}
+        onCouponsClick={openCoupons}
         onNotificationsClick={()=>setNotificationsOpen(true)}
         onFavoritesClick={()=>{setFavoritesOnly(v=>!v);document.getElementById('catalogo')?.scrollIntoView({behavior:'smooth'});}}
         favoritesCount={favorites.length}
+        account={account} onAccountClick={openAccount}
       />
       <Hero />
 
@@ -385,7 +400,7 @@ export default function App() {
       <div className="border-t border-orange-100 bg-orange-50 py-6">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4">
           <div><p className="text-sm font-black text-slate-900">Fique por dentro da TechStore</p><p className="mt-1 text-xs text-slate-500">Cupons e avisos demonstrativos para explorar o projeto</p></div>
-          <div className="flex flex-wrap gap-2"><button onClick={()=>setNotificationsOpen(true)} className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm hover:text-orange-700"><Bell size={17}/> Notificações</button><button onClick={()=>setCouponsOpen(true)} className="flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-3 text-sm font-bold text-white hover:bg-orange-700"><Gift size={17}/> Ver cupons</button></div>
+          <div className="flex flex-wrap gap-2"><button onClick={()=>setNotificationsOpen(true)} className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm hover:text-orange-700"><Bell size={17}/> Notificações</button><button onClick={openCoupons} className="flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-3 text-sm font-bold text-white hover:bg-orange-700"><Gift size={17}/> Ver cupons</button></div>
         </div>
       </div>
       <Footer onInfoClick={openInfo} />
@@ -403,85 +418,13 @@ export default function App() {
           </form>
         </div>
       )}
-      {adminOpen && <AdminPanel products={products} sales={sales} onAddProduct={product=>setProducts(current=>[product,...current])} onDeleteProduct={id=>{setProducts(current=>current.filter(p=>p.id!==id));setCart(current=>current.filter(line=>line.productId!==id));}} onUpdateStock={(id,stock)=>setProducts(current=>current.map(p=>p.id===id?{...p,stock}:p))} onLogout={()=>setAdminOpen(false)} onUpdateSaleStatus={(id,status)=>setSales(current=>current.map(s=>s.id===id?{...s,status}:s))} onUpdateProduct={(id,patch)=>setProducts(current=>current.map(p=>p.id===id?{...p,...patch}:p))} onSeedDemoSales={items=>setSales(current=>current.length?current:items)}/>}
+      {adminOpen && <AdminPanel products={products} sales={sales} onAddProduct={product=>setProducts(current=>[product,...current])} onDeleteProduct={id=>{setProducts(current=>current.filter(p=>p.id!==id));setCart(current=>current.filter(line=>line.productId!==id));}} onUpdateStock={(id,stock)=>setProducts(current=>current.map(p=>p.id===id?{...p,stock}:p))} onLogout={()=>setAdminOpen(false)} onUpdateSaleStatus={(id,status)=>setSales(current=>current.map(s=>s.id===id?{...s,status}:s))} onUpdateProduct={(id,patch)=>setProducts(current=>current.map(p=>p.id===id?{...p,...patch}:p))} onSeedDemoSales={items=>setSales(current=>current.length?current:items)} couponBanner={couponBanner} onUpdateCouponBanner={setCouponBanner}/>}
 
-      {cartOpen && (
-        <div className="fixed inset-0 z-[70] flex justify-end bg-slate-950/50" onMouseDown={(event) => { if (event.target === event.currentTarget) setCartOpen(false); }}>
-          <aside role="dialog" aria-modal="true" aria-label="Carrinho de compras" className="flex h-full w-full max-w-md flex-col bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
-              <div><h2 className="text-xl font-black text-slate-900">Seu carrinho</h2><p className="text-sm text-slate-500">{itemCount} item(ns)</p></div>
-              <button onClick={() => setCartOpen(false)} aria-label="Fechar carrinho" className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X /></button>
-            </div>
-            <div className="flex-1 space-y-4 overflow-y-auto p-6">
-              {cartProducts.length ? cartProducts.map(({ product, quantity }) => (
-                <div key={product.id} className="flex gap-4 border-b border-slate-100 pb-4">
-                  <img src={product.image_url} alt={product.name} className="h-20 w-20 rounded-xl bg-slate-100 object-contain" />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="line-clamp-2 font-bold text-slate-800">{product.name}</h3>
-                    <p className="mt-1 font-bold text-orange-600">{formatPrice(product.price)}</p>
-                    <div className="mt-3 flex items-center gap-2">
-                      <button onClick={() => changeQuantity(product.id, -1)} aria-label="Diminuir quantidade" className="rounded-lg border border-slate-200 p-1.5 hover:bg-slate-50"><Minus size={14} /></button>
-                      <span className="min-w-6 text-center text-sm font-bold">{quantity}</span>
-                      <button onClick={() => changeQuantity(product.id, 1)} aria-label="Aumentar quantidade" className="rounded-lg border border-slate-200 p-1.5 hover:bg-slate-50"><Plus size={14} /></button>
-                      <button onClick={() => setCart((current) => current.filter((line) => line.productId !== product.id))} aria-label="Remover produto" className="ml-auto rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={16} /></button>
-                    </div>
-                  </div>
-                </div>
-              )) : (
-                <div className="py-16 text-center"><ShoppingCart size={38} className="mx-auto mb-3 text-slate-300" /><p className="font-bold text-slate-700">Seu carrinho está vazio</p><p className="mt-1 text-sm text-slate-500">Adicione produtos para continuar.</p></div>
-              )}
-            </div>
-            <div className="space-y-3 border-t border-slate-100 p-6">
-              <div className="flex justify-between text-sm text-slate-600"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
-              <div className="flex justify-between text-sm text-slate-600"><span>Entrega simulada</span><span>{shipping === 0 ? 'Grátis' : formatPrice(shipping)}</span></div>
-              {discount>0&&<div className="flex justify-between text-sm font-bold text-emerald-700"><span>Cupom ({appliedCoupon})</span><span>-{formatPrice(discount)}</span></div>}
-              {pixDiscount>0&&<div className="flex justify-between text-sm font-bold text-emerald-700"><span>Desconto Pix demo</span><span>-{formatPrice(pixDiscount)}</span></div>}
-              {subtotal > 0 && subtotal < 499 && <p className="text-xs text-emerald-600">Faltam {formatPrice(499 - subtotal)} para ganhar frete grátis.</p>}
-              <div className="flex justify-between border-t border-slate-100 pt-3 text-lg font-black text-slate-900"><span>Total</span><span>{formatPrice(total)}</span></div>
-              <button onClick={()=>setCouponsOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 py-2.5 text-sm font-bold text-orange-700 hover:bg-orange-100"><Gift size={17}/> Ver cupons disponíveis</button>
-              <button disabled={!cartProducts.length} onClick={() => {setCartOpen(false);setCheckoutOpen(true);}} className="w-full rounded-xl bg-orange-600 py-3.5 font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-slate-300">Continuar para entrega</button>
-              <p className="text-center text-xs text-slate-400">Demonstração — sem pagamento real.</p>
-            </div>
-          </aside>
-        </div>
-      )}
-
-      {checkoutOpen && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 p-4">
-          <form onSubmit={finishDemoOrder} className="max-h-[94vh] w-full max-w-xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
-            <div className="mb-6 flex items-start justify-between">
-              <div><p className="text-sm font-bold uppercase tracking-widest text-orange-600">Última etapa</p><h2 className="mt-1 text-2xl font-black text-slate-900">Finalize sua simulação</h2></div>
-              <button type="button" onClick={() => setCheckoutOpen(false)} aria-label="Fechar" className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X /></button>
-            </div>
-            <div className="space-y-4">
-              <label className="block text-sm font-semibold text-slate-700">Nome completo<input name="customer" required minLength={3} autoComplete="name" className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-orange-400" placeholder="Seu nome" /></label>
-              <label className="block text-sm font-semibold text-slate-700">E-mail<input name="email" required type="email" autoComplete="email" className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-orange-400" placeholder="voce@email.com" /></label>
-              <p className="rounded-lg bg-orange-50 p-3 text-xs leading-5 text-orange-900">Use dados de teste. Nenhum produto é enviado e não solicitamos endereço completo ou cartão.</p>
-              <label className="block text-sm font-semibold text-slate-700">CEP para simulação<input inputMode="numeric" maxLength={9} value={checkoutCep} onChange={e=>setCheckoutCep(e.target.value.replace(/[^0-9-]/g,''))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3" placeholder="00000-000 (opcional)"/></label>
-              <fieldset className="rounded-xl border p-4"><legend className="px-2 text-sm font-black">Opção de entrega (simulada)</legend><div className="space-y-2">{([{id:'economico',label:'Econômica · 7–10 dias úteis',value:subtotal>=499?'Grátis':formatPrice(19.9)},{id:'expresso',label:'Expressa · 3–5 dias úteis',value:formatPrice(34.9)},{id:'retirada',label:'Retirada simulada',value:'Grátis'}] as const).map(option=><label key={option.id} className="flex items-center gap-2 text-sm"><input type="radio" checked={delivery===option.id} onChange={()=>setDelivery(option.id)}/><span className="flex-1">{option.label}</span><strong>{option.value}</strong></label>)}</div></fieldset>
-              <fieldset className="rounded-xl border p-4"><legend className="px-2 text-sm font-black">Forma de pagamento ilustrativa</legend><div className="grid gap-2">{([{id:'card',label:'Cartão — até 10x sem juros',description:'10x de '+formatPrice((subtotal-discount+shipping)/10)},{id:'pix',label:'Pix — 5% OFF adicional',description:'Total '+formatPrice(Math.max(0,subtotal-discount)*.95+shipping)},{id:'boleto',label:'Boleto à vista',description:'Total '+formatPrice(subtotal-discount+shipping)}] as const).map(m=><label key={m.id} className="flex items-center gap-3 rounded-lg bg-slate-50 p-3 text-sm"><input type="radio" name="payment" checked={paymentMethod===m.id} onChange={()=>setPaymentMethod(m.id)}/><span className="flex-1 font-semibold">{m.label}</span><span className="text-xs text-slate-500">{m.description}</span></label>)}</div></fieldset>
-              <div className="rounded-xl border border-orange-200 bg-orange-50 p-4"><label htmlFor="checkout-coupon" className="flex items-center gap-2 text-sm font-black text-orange-900"><Tag size={17}/> Cupom de desconto</label><div className="mt-2 flex gap-2"><input id="checkout-coupon" value={couponInput} onChange={e=>setCouponInput(e.target.value.toUpperCase())} placeholder="Digite o código" className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm uppercase"/><button type="button" onClick={()=>applyCoupon(couponInput)} className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white">Aplicar</button></div><button type="button" onClick={()=>setCouponsOpen(true)} className="mt-2 text-xs font-bold text-orange-700 underline">Ver cupons disponíveis</button>{appliedCoupon&&<p className="mt-2 text-xs font-semibold text-emerald-700">{couponResult.error?couponResult.error:'Cupom '+appliedCoupon+' aplicado: -'+formatPrice(discount)} <button type="button" className="ml-2 underline" onClick={()=>{setAppliedCoupon('');setCouponInput('');}}>Remover</button></p>}</div>
-            </div>
-            <div className="my-5 space-y-2 rounded-xl bg-slate-50 p-4 text-sm"><div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div><div className="flex justify-between"><span>Frete ilustrativo</span><span>{shipping?formatPrice(shipping):'Grátis'}</span></div>{discount>0&&<div className="flex justify-between text-emerald-700"><span>Cupom</span><span>-{formatPrice(discount)}</span></div>}{pixDiscount>0&&<div className="flex justify-between text-emerald-700"><span>Desconto Pix</span><span>-{formatPrice(pixDiscount)}</span></div>}<div className="flex justify-between border-t pt-3 text-lg font-black"><span>Total demonstrativo</span><span className="text-orange-600">{formatPrice(total)}</span></div></div>
-            <button type="submit" className="w-full rounded-xl bg-orange-600 py-3.5 font-bold text-white transition hover:bg-orange-700">Confirmar pedido de demonstração</button>
-            <p className="mt-3 text-center text-xs text-slate-400">Nenhum e-mail, boleto ou Pix será gerado. Checkout 100% ilustrativo.</p>
-          </form>
-        </div>
-      )}
-
-
-      {couponsOpen && <div role="dialog" aria-modal="true" aria-label="Central de cupons" className="fixed inset-0 z-[135] flex items-center justify-center bg-slate-950/70 p-4">
-        <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
-          <div className="mb-5 flex items-start justify-between"><div><p className="text-xs font-black uppercase tracking-widest text-orange-600">Benefícios TechStore</p><h2 className="mt-2 text-2xl font-black">Central de cupons</h2><p className="mt-2 text-sm text-slate-500">Cupons de demonstração, sujeitos a categoria e compra mínima.</p></div><button onClick={()=>setCouponsOpen(false)} aria-label="Fechar cupons" className="rounded-full p-2 hover:bg-slate-100"><X/></button></div>
-          <div className="grid gap-3 sm:grid-cols-2">{coupons.map(c=><article key={c.code} className="rounded-2xl border-2 border-dashed border-orange-200 bg-orange-50/40 p-5"><div className="flex items-center gap-2 text-orange-600"><Gift size={20}/><span className="text-xs font-black uppercase">{c.label}</span></div><p className="mt-3 text-xl font-black tracking-wide">{c.code}</p><p className="mt-2 min-h-10 text-sm text-slate-600">{c.description}</p><button onClick={()=>{setCouponInput(c.code);setCouponsOpen(false);if(!checkoutOpen){setCartOpen(true);setNotice('Cupom '+c.code+' selecionado. Aplique-o no checkout após adicionar itens.');}}} className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-orange-600">Selecionar cupom →</button></article>)}</div>
-          <p className="mt-5 text-xs leading-5 text-slate-500">Cupons fictícios não cumulativos, descontos não reais. Os valores dependem dos itens selecionados.</p>
-        </div>
-      </div>}
       {notificationsOpen && <div role="dialog" aria-modal="true" aria-label="Notificações da TechStore" className="fixed inset-0 z-[135] flex items-center justify-center bg-slate-950/70 p-4">
         <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
           <div className="flex justify-between"><div><p className="text-xs font-black uppercase tracking-widest text-orange-600">Caixa de avisos</p><h2 className="mt-2 text-2xl font-black">Notificações</h2></div><button aria-label="Fechar avisos" onClick={()=>setNotificationsOpen(false)}><X/></button></div>
           <div className="mt-6 space-y-4">
-            <div className="flex gap-3 rounded-xl border p-4"><Gift className="shrink-0 text-orange-600"/><div><h3 className="font-bold">Cupons de demonstração</h3><p className="mt-1 text-sm text-slate-500">Confira os códigos TECH10, GAMER15 e outros.</p><button onClick={()=>{setNotificationsOpen(false);setCouponsOpen(true);}} className="mt-2 text-sm font-bold text-orange-700">Ver cupons →</button></div></div>
+            <div className="flex gap-3 rounded-xl border p-4"><Gift className="shrink-0 text-orange-600"/><div><h3 className="font-bold">Cupons de demonstração</h3><p className="mt-1 text-sm text-slate-500">Confira os códigos TECH10, GAMER15 e outros.</p><button onClick={()=>{setNotificationsOpen(false);openCoupons();}} className="mt-2 text-sm font-bold text-orange-700">Ver cupons →</button></div></div>
             <div className="flex gap-3 rounded-xl border p-4"><Cpu className="shrink-0 text-orange-600"/><div><h3 className="font-bold">Novidade: monte seu PC</h3><p className="mt-1 text-sm text-slate-500">Escolha componentes e veja o valor ilustrativo.</p><button onClick={()=>{setNotificationsOpen(false);setBuilderOpen(true);}} className="mt-2 text-sm font-bold text-orange-700">Começar →</button></div></div>
             <div className="flex gap-3 rounded-xl border p-4"><Bell className="shrink-0 text-orange-600"/><div><h3 className="font-bold">Sua lista de favoritos</h3><p className="mt-1 text-sm text-slate-500">{favorites.length} produtos salvos localmente.</p></div></div>
           </div>
