@@ -47,3 +47,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (prefers-reduced-motion: reduce) {
   .checkout-flow-line__stroke { animation: none; clip-path: inset(0 0 0 0 round 999px); }
 }
+
+/* The main storefront includes the four language buttons in its top navigation.
+   When an overlay covers that header, show the same controls on the overlay. */
+body:has([data-techstore-main-header]):not(:has([data-techstore-overlay])) #techstore-language-floating {
+  display: none;
+}
