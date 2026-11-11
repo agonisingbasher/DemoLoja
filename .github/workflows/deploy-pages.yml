@@ -41,6 +41,10 @@ jobs:
 
       - name: Build application
         working-directory: Demo-Loja
+        env:
+          # Publishable/browser keys only. Never set a service-role or secret API key here.
+          VITE_SUPABASE_URL: ${{ vars.TECHSTORE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.TECHSTORE_SUPABASE_PUBLISHABLE_KEY }}
         run: npm run build
 
       - name: Upload Pages artifact
