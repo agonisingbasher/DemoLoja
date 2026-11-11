@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
-import { BarChart3, Boxes, Download, LogOut, PackagePlus, ShoppingBag, Trash2, TrendingUp, Users, AlertTriangle } from 'lucide-react';
+import { Activity, ArrowUpRight, BarChart3, Bell, Boxes, CalendarDays, Download, Gift, LayoutDashboard, LogOut, PackagePlus, Search, ShoppingBag, Trash2, TrendingUp, Users, AlertTriangle, Wallet, CheckCircle2 } from 'lucide-react';
+import { coupons } from '../lib/promotions';
 import type { Product } from '../lib/supabase';
 
 export interface DemoSale {
@@ -9,6 +10,11 @@ export interface DemoSale {
   date: string;
   total: number;
   items: { productId: string; name: string; quantity: number; unitPrice: number }[];
+  status?: 'Recebido'|'Em separação'|'Em transporte'|'Concluído'|'Cancelado';
+  paymentMethod?: 'card'|'pix'|'boleto';
+  couponCode?: string;
+  discount?: number;
+  shipping?: number;
 }
 interface AdminPanelProps {
   products: Product[];
@@ -17,10 +23,16 @@ interface AdminPanelProps {
   onDeleteProduct: (id: string) => void;
   onUpdateStock: (id: string, stock: number) => void;
   onLogout: () => void;
+  onUpdateSaleStatus: (id: string, status: NonNullable<DemoSale['status']>) => void;
+  onUpdateProduct: (id: string, patch: Partial<Product>) => void;
+  onSeedDemoSales: (items: DemoSale[]) => void;
 }
 const money = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-export function AdminPanel({ products, sales, onAddProduct, onDeleteProduct, onUpdateStock, onLogout }: AdminPanelProps) {
-  const [tab, setTab] = useState<'overview' | 'products' | 'sales' | 'inventory' | 'customers'>('overview');
+export function AdminPanel({ products, sales, onAddProduct, onDeleteProduct, onUpdateStock, onLogout, onUpdateSaleStatus, onUpdateProduct, onSeedDemoSales }: AdminPanelProps) {
+  const [tab, setTab] = useState<'overview' | 'products' | 'sales' | 'inventory' | 'customers' | 'marketing' | 'analytics'>('overview');
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('Todos');
+  const [period, setPeriod] = useState<'7'|'30'|'all'>('30');
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -29,7 +41,33 @@ export function AdminPanel({ products, sales, onAddProduct, onDeleteProduct, onU
   const [price, setPrice] = useState('199.90');
   const [stock, setStock] = useState('10');
   const [category, setCategory] = useState('perifericos');
-  const revenue = sales.reduce((sum, sale) => sum + sale.total, 0);
+  const activeSales = sales.filter(s=>s.status!=='Cancelado');
+  const revenue = activeSales.reduce((sum, sale) => sum + sale.total, 0);
+  const today = new Date();
+  const recentSales = activeSales.filter(s=>period==='all' || (today.getTime()-new Date(s.date).getTime())/86400000 <= Number(period));
+  const periodRevenue = recentSales.reduce((sum,s)=>sum+s.total,0);
+  const averageTicket = activeSales.length ? revenue/activeSales.length : 0;
+  const last7 = Array.from({length:7},(_,index)=>{
+    const date = new Date();date.setHours(0,0,0,0);date.setDate(date.getDate()-6+index);
+    return {label:date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}),amount:activeSales.filter(s=>new Date(s.date).toDateString()===date.toDateString()).reduce((n,s)=>n+s.total,0)};
+  });
+  const maxDay = Math.max(1,...last7.map(d=>d.amount));
+  const topProducts = Object.values(activeSales.flatMap(s=>s.items).reduce<Record<string,{name:string,quantity:number,total:number}>>((acc,item)=>{
+    if(!acc[item.productId])acc[item.productId]={name:item.name,quantity:0,total:0};
+    acc[item.productId].quantity+=item.quantity;acc[item.productId].total+=item.quantity*item.unitPrice;return acc;
+  },{})).sort((a,b)=>b.quantity-a.quantity).slice(0,5);
+  const filteredOrders = [...sales].filter(s=>(statusFilter==='Todos'||(s.status||'Recebido')===statusFilter) && (s.id+' '+s.customer+' '+s.email).toLowerCase().includes(query.toLowerCase())).reverse();
+  const seedOrders = () => {
+    if(sales.length||!products.length)return;
+    const examples=Array.from({length:18},(_,i)=>{
+      const first=products[(i*7)%products.length];const second=products[(i*3+5)%products.length];
+      const date=new Date();date.setDate(date.getDate()-(i%12));date.setHours(10+i%8,20,0,0);
+      const count=i%3===0?2:1;
+      const items=[{productId:first.id,name:first.name,quantity:count,unitPrice:first.price},...(second.id!==first.id&&i%2===0?[{productId:second.id,name:second.name,quantity:1,unitPrice:second.price}]:[])];
+      return {id:'DEMO-'+String(i+1).padStart(4,'0'),customer:'Cliente Exemplo '+String(i+1),email:'cliente'+String(i+1)+'@example.com',date:date.toISOString(),total:items.reduce((n,item)=>n+item.unitPrice*item.quantity,0),items,status:(['Concluído','Recebido','Em separação','Em transporte'] as const)[i%4],couponCode:i%4===0?'TECH10':undefined,paymentMethod:(['pix','card','boleto'] as const)[i%3]} satisfies DemoSale;
+    });
+    onSeedDemoSales(examples);
+  };
   const sold = sales.reduce((sum, sale) => sum + sale.items.reduce((n, item) => n + item.quantity, 0), 0);
   const lowStock = products.filter(product => product.stock <= 5);
   const inventoryValue = products.reduce((sum, product) => sum + product.stock * product.price, 0);
@@ -61,23 +99,52 @@ export function AdminPanel({ products, sales, onAddProduct, onDeleteProduct, onU
     });
     setName(''); setDescription(''); setDetails(''); setImage(''); setShowForm(false);
   };
-  const tabs = [{ id: 'overview', label: 'Visão geral', icon: BarChart3 }, { id: 'products', label: 'Produtos', icon: Boxes }, { id: 'sales', label: 'Vendas', icon: ShoppingBag }, { id: 'inventory', label: 'Estoque', icon: AlertTriangle }, { id: 'customers', label: 'Clientes', icon: Users }] as const;
-  return <div className="fixed inset-0 z-[120] overflow-y-auto bg-slate-100">
-    <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 bg-slate-950 px-5 py-4 text-white shadow-lg md:px-10">
-      <div><p className="text-xs font-bold uppercase tracking-widest text-orange-400">TechStore • Administração</p><h1 className="text-xl font-black">Painel de controle</h1></div>
-      <button onClick={onLogout} className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-bold hover:bg-white/20"><LogOut size={17}/> Sair</button>
+  const tabs = [
+    { id: 'overview', label: 'Visão geral', icon: LayoutDashboard },
+    { id: 'sales', label: 'Pedidos', icon: ShoppingBag },
+    { id: 'products', label: 'Produtos', icon: Boxes },
+    { id: 'inventory', label: 'Estoque', icon: AlertTriangle },
+    { id: 'customers', label: 'Clientes', icon: Users },
+    { id: 'marketing', label: 'Campanhas e cupons', icon: Gift },
+    { id: 'analytics', label: 'Relatórios', icon: BarChart3 },
+  ] as const;
+  return <div className="fixed inset-0 z-[120] overflow-y-auto bg-[#f4f6fa] text-slate-900">
+    <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950 px-4 py-4 text-white shadow-lg sm:px-7">
+      <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-orange-600 text-xl font-black">T</span><div><p className="text-xs font-bold uppercase tracking-widest text-orange-400">TechStore / Workspace</p><h1 className="text-xl font-black tracking-tight">Painel de controle <span className="ml-2 rounded-md bg-orange-500/20 px-2 py-1 text-xs text-orange-200">DEMO</span></h1></div></div>
+        <div className="flex items-center gap-3"><span className="hidden items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-xs text-slate-300 sm:flex"><CheckCircle2 size={16} className="text-emerald-400"/> Dados armazenados localmente</span><button onClick={onLogout} className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/20"><LogOut size={17}/> Voltar à loja</button></div>
+      </div>
     </header>
-    <main className="mx-auto max-w-7xl px-4 py-8 md:px-8">
-      <div className="mb-7 flex flex-wrap gap-2">{tabs.map(({id,label,icon:Icon}) => <button key={id} onClick={() => setTab(id)} className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold ${tab===id?'bg-orange-600 text-white':'bg-white text-slate-600 hover:bg-orange-50'}`}><Icon size={17}/>{label}</button>)}</div>
+    <div className="mx-auto grid w-full max-w-[1500px] lg:grid-cols-[246px_minmax(0,1fr)]">
+      <aside className="border-b bg-white px-3 py-5 lg:min-h-[calc(100vh-77px)] lg:border-b-0 lg:border-r">
+        <p className="px-4 pb-3 text-xs font-black uppercase tracking-widest text-slate-400">Menu principal</p>
+        <nav className="flex flex-wrap gap-1.5 lg:flex-col">{tabs.map(({id,label,icon:Icon})=><button key={id} onClick={()=>setTab(id)} className={'flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition '+(tab===id?'bg-orange-600 text-white shadow-md':'text-slate-600 hover:bg-orange-50 hover:text-orange-700')}><Icon size={19}/>{label}</button>)}</nav>
+        <div className="mt-8 hidden rounded-2xl bg-slate-950 p-5 text-white lg:block"><div className="flex items-center gap-2 text-sm font-black"><Bell size={17} className="text-orange-400"/> Central de operação</div><p className="mt-3 text-xs leading-5 text-slate-400">{lowStock.length} produtos com estoque baixo. {sales.length} pedidos demonstrativos registrados.</p><button onClick={()=>setTab('inventory')} className="mt-4 text-xs font-bold text-orange-300">Ver alertas →</button></div>
+      </aside>
+      <main className="min-w-0 px-4 py-8 sm:px-7 lg:px-9">
+        <div className="mb-7 flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-widest text-orange-600">Gestão de e-commerce • Ambiente demonstrativo</p><p className="mt-1 text-sm text-slate-500">Os indicadores representam apenas os registros deste navegador.</p></div><div className="flex items-center gap-2 rounded-xl border bg-white px-4 py-2 text-xs font-bold text-slate-600"><CalendarDays size={16}/> {new Date().toLocaleDateString('pt-BR')}</div></div>
       {tab === 'overview' && <>
-        <div className="mb-7"><h2 className="text-2xl font-black text-slate-900">Visão geral</h2><p className="mt-1 text-slate-500">Resumo da operação demonstrativa da loja.</p></div>
+        <div className="mb-7 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-3xl font-black text-slate-900">Visão geral da operação</h2><p className="mt-1 text-slate-500">Um centro de controle completo para a TechStore demonstrativa.</p></div>{sales.length===0&&<button onClick={seedOrders} className="rounded-xl bg-orange-600 px-5 py-3 text-sm font-bold text-white hover:bg-orange-700">Carregar 18 pedidos fictícios para demonstração</button>}</div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[
             {label:'Vendas realizadas',value:String(sales.length),icon:ShoppingBag},
             {label:'Unidades vendidas',value:String(sold),icon:TrendingUp},
             {label:'Produtos cadastrados',value:String(products.length),icon:Boxes},
             {label:'Faturamento demonstrativo',value:money(revenue),icon:BarChart3},
+            {label:'Ticket médio',value:money(averageTicket),icon:Wallet},
+            {label:'Clientes de exemplo',value:String(customers.length),icon:Users},
+            {label:'Estoque baixo',value:String(lowStock.length),icon:AlertTriangle},
+            {label:'Valor em catálogo',value:money(inventoryValue),icon:Activity},
           ].map(({label,value,icon:Icon})=><article key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between text-slate-500"><span className="text-sm font-semibold">{label}</span><Icon className="text-orange-500"/></div><p className="mt-4 text-2xl font-black text-slate-900">{value}</p></article>)}
+        </div>
+
+        <div className="mt-7 grid gap-5 xl:grid-cols-[1.4fr_1fr]">
+          <section className="rounded-2xl border bg-white p-5 shadow-sm sm:p-6">
+            <div className="mb-3 flex items-center justify-between"><div><h3 className="text-lg font-black">Desempenho dos últimos 7 dias</h3><p className="text-xs text-slate-500">Receita de pedidos locais não cancelados</p></div><button onClick={()=>setTab('analytics')} className="text-xs font-bold text-orange-600">Relatórios →</button></div>
+            <div className="flex h-48 items-end gap-2 border-b border-dashed border-slate-200 pb-2">{last7.map(day=><div key={day.label} className="flex h-full flex-1 flex-col items-center justify-end gap-2"><span className="text-[10px] font-bold text-slate-500">{day.amount?money(day.amount):''}</span><div title={day.label+' '+money(day.amount)} className="w-full max-w-12 rounded-t-md bg-gradient-to-t from-orange-600 to-amber-400" style={{height:String(Math.max(5,day.amount/maxDay*100))+'%'}}/><span className="text-[10px] text-slate-500">{day.label}</span></div>)}</div>
+            {!sales.length&&<p className="mt-3 text-xs text-slate-400">Sem vendas locais. Use o botão de pedidos fictícios para visualizar o gráfico.</p>}
+          </section>
+          <section className="rounded-2xl border bg-white p-5 shadow-sm sm:p-6"><div className="flex items-center justify-between"><h3 className="text-lg font-black">Pedidos por situação</h3><ShoppingBag size={19} className="text-orange-500"/></div><div className="mt-5 space-y-4">{(['Recebido','Em separação','Em transporte','Concluído','Cancelado'] as const).map(status=>{const count=sales.filter(order=>(order.status||'Recebido')===status).length;return <div key={status}><div className="mb-1 flex justify-between text-xs font-semibold"><span>{status}</span><span>{count}</span></div><div className="h-2 rounded-full bg-slate-100"><div className="h-2 rounded-full bg-orange-500" style={{width:String(sales.length?count/sales.length*100:0)+'%'}}/></div></div>})}</div><button onClick={()=>setTab('sales')} className="mt-5 text-xs font-bold text-orange-600">Gerenciar pedidos →</button></section>
         </div>
         <div className="mt-7 grid gap-4 md:grid-cols-2">
           <section className="rounded-2xl border border-slate-200 bg-white p-6"><h3 className="font-black text-slate-900">Estoque e valor de catálogo</h3><p className="mt-2 text-slate-600">{products.reduce((n,p)=>n+p.stock,0)} unidades disponíveis em {products.length} produtos.</p><p className="mt-2 text-lg font-bold text-slate-900">{money(inventoryValue)} em estoque ilustrativo</p><button onClick={()=>setTab('inventory')} className="mt-3 text-sm font-bold text-orange-600 hover:underline">Gerenciar estoque →</button></section>
