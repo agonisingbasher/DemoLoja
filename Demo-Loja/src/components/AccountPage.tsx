@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase';
 import { profileFromUser, type AccountProfile, type DeliveryAddress } from '../lib/customerAccount';
 import type { DemoSale } from './AdminPanel';
 import { OrderTracking } from './OrderTracking';
-import { money } from '../lib/promotions';
 import { Footer } from './Footer';
 
 type Props = { account:AccountProfile|null;orders:DemoSale[];initialTab?:ProfileTab;
@@ -31,7 +30,7 @@ export function AccountPage({account,orders,initialTab='profile',onBack,onChange
   const [ordersError,setOrdersError]=useState('');
   const [reloadOrders,setReloadOrders]=useState(0);
   const [clock,setClock]=useState(()=>Date.now());
-  const [expandedOrders,setExpandedOrders]=useState<string[]>([]);
+  const [expandedOrders,setExpandedOrders]=useState<string[]>(['__auto__']);
   useEffect(()=>{
     const clockId=window.setInterval(()=>setClock(Date.now()),15000);
     return ()=>window.clearInterval(clockId);
@@ -172,7 +171,7 @@ export function AccountPage({account,orders,initialTab='profile',onBack,onChange
             </div>
             {ordersError&&<p role="alert" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{ordersError}</p>}
             {loadingOrders&&<p role="status" className="mt-4 text-sm text-slate-500">Sincronizando pedidos da sua conta...</p>}
-            {userOrders.length?<div className="mt-6 space-y-4">{userOrders.map((order,i)=><OrderTracking key={order.id} order={order} now={clock} expanded={expandedOrders.includes(order.id)||(i===0&&expandedOrders.length===0)} onToggle={()=>setExpandedOrders(current=>current.includes(order.id)?current.filter(id=>id!==order.id):[...current,order.id])}/>)}</div>:<div className="mt-6 rounded-2xl border border-dashed bg-slate-50 p-10 text-center"><ClipboardList size={36} className="mx-auto text-slate-300"/><p className="mt-4 font-bold">Nenhum pedido de demonstração encontrado</p><p className="mt-2 text-sm text-slate-500">Faça uma simulação de compra no catálogo para acompanhar cada etapa nesta página.</p></div>}
+            {userOrders.length?<div className="mt-6 space-y-4">{userOrders.map((order,i)=><OrderTracking key={order.id} order={order} now={clock} expanded={expandedOrders.includes(order.id)||(i===0&&expandedOrders.includes('__auto__'))} onToggle={()=>setExpandedOrders(current=>{const wasExpanded=current.includes(order.id)||(i===0&&current.includes('__auto__'));const withoutAuto=current.filter(id=>id!=='__auto__');return wasExpanded?withoutAuto.filter(id=>id!==order.id):[...withoutAuto,order.id];})}/>)}</div>:<div className="mt-6 rounded-2xl border border-dashed bg-slate-50 p-10 text-center"><ClipboardList size={36} className="mx-auto text-slate-300"/><p className="mt-4 font-bold">Nenhum pedido de demonstração encontrado</p><p className="mt-2 text-sm text-slate-500">Faça uma simulação de compra no catálogo para acompanhar cada etapa nesta página.</p></div>}
           </div>}
           {message&&<p role="status" className="mt-5 rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-800">{message}</p>}
           <p className="mt-7 border-t pt-5 text-xs leading-6 text-slate-500">Os endereços do perfil servem apenas para demonstrar a interface. Se o login real estiver configurado, use dados apropriados e revise a política de privacidade.</p>
