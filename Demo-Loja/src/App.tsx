@@ -15,6 +15,20 @@ const CART_KEY = 'techstore_cart_v1';
 const FAVORITES_KEY = 'techstore_favorites_v1';
 const PRODUCTS_KEY = 'techstore_products_v1';
 const SALES_KEY = 'techstore_sales_v1';
+const footerRoutes: Record<string, string> = {
+  'Sobre Nós': 'sobre-nos',
+  'Trabalhe Conosco': 'trabalhe-conosco',
+  'Política de Privacidade': 'politica-de-privacidade',
+  'Termos de Uso': 'termos-de-uso',
+  'Central de Ajuda': 'central-de-ajuda',
+  'Trocas e Devoluções': 'trocas-e-devolucoes',
+  'Rastreamento': 'rastreamento',
+  FAQ: 'faq',
+};
+function topicFromHash(hash: string): string | null {
+  const slug = hash.replace(/^#\/?/, '').replace(/\/$/, '');
+  return Object.keys(footerRoutes).find(topic => footerRoutes[topic] === slug) ?? null;
+}
 
 const categories: Category[] = [
   { id: 'consoles', name: 'Consoles', slug: 'consoles', created_at: '' },
@@ -52,13 +66,19 @@ export default function App() {
   const [notice, setNotice] = useState('');
   const [orderCode, setOrderCode] = useState('');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [infoTopic, setInfoTopic] = useState<string | null>(null);
+  const [infoTopic, setInfoTopic] = useState<string | null>(() => topicFromHash(window.location.hash));
   const selectedProduct = products.find((product) => product.id === selectedProductId);
 
   useEffect(() => { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }, [cart]);
   useEffect(() => { localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products)); }, [products]);
   useEffect(() => { localStorage.setItem(SALES_KEY, JSON.stringify(sales)); }, [sales]);
   useEffect(() => { localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites)); }, [favorites]);
+  useEffect(() => {
+    const onHashChange = () => setInfoTopic(topicFromHash(window.location.hash));
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+  useEffect(() => { if (infoTopic) window.scrollTo(0, 0); }, [infoTopic]);
   useEffect(() => {
     if (!notice) return;
     const timer = window.setTimeout(() => setNotice(''), 2600);
@@ -151,8 +171,22 @@ export default function App() {
     setNotice('Pedido demonstrativo concluído!');
   };
 
+  const openInfo = (topic: string) => {
+    const slug = footerRoutes[topic];
+    if (!slug) return;
+    window.location.hash = '/' + slug;
+    setInfoTopic(topic);
+    window.scrollTo(0, 0);
+  };
+  const closeInfo = () => {
+    window.location.hash = 'topo';
+    setInfoTopic(null);
+    window.scrollTo(0, 0);
+  };
+  // Information pages replace the storefront instead of appearing after its footer.
+  if (infoTopic) return <FooterInfoPage topic={infoTopic} onBack={closeInfo} onNavigate={openInfo} />;
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div id="topo" className="min-h-screen bg-slate-50">
       <Header
         onCartClick={() => setCartOpen(true)}
         cartItemsCount={itemCount}
@@ -235,7 +269,7 @@ export default function App() {
           <a href="#catalogo" className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-3 font-bold text-white transition hover:bg-orange-600">Explorar produtos <ArrowRight size={18} /></a>
         </div>
       </section>
-      <Footer onInfoClick={setInfoTopic} />
+      <Footer onInfoClick={openInfo} />
 
 
       {loginOpen && (
@@ -288,8 +322,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {infoTopic && <FooterInfoPage topic={infoTopic} onBack={() => setInfoTopic(null)} onNavigate={setInfoTopic} />}
 
       {cartOpen && (
         <div className="fixed inset-0 z-[70] flex justify-end bg-slate-950/50" onMouseDown={(event) => { if (event.target === event.currentTarget) setCartOpen(false); }}>
