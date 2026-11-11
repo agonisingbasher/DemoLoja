@@ -13,6 +13,8 @@ import { categoryIcons } from './components/CategoryFilter';
 import { CheckoutPage, type CheckoutSubmission } from './components/CheckoutPage';
 import { CouponCenterPage } from './components/CouponCenterPage';
 import { AccountPage } from './components/AccountPage';
+import { EmailConfirmationPage } from './components/EmailConfirmationPage';
+import { MFASecurity } from './components/MFASecurity';
 import { defaultCouponBanner, couponBannerKey, type CouponBanner } from './lib/couponBanner';
 import { loadDemoAccount, saveDemoAccount, profileFromUser, type AccountProfile } from './lib/customerAccount';
 import { supabase } from './lib/supabase';
@@ -118,7 +120,10 @@ export default function App() {
   const [page, setPage] = useState(1);
   const [couponsPage, setCouponsPage] = useState(() => window.location.hash === '#/cupons');
   const [accountPage, setAccountPage] = useState(() => window.location.hash === '#/minha-conta');
-  const [accountTab, setAccountTab] = useState<'profile'|'address'|'orders'>('profile');
+  const [confirmEmailPage,setConfirmEmailPage]=useState(()=>window.location.hash==='#/confirmar-email');
+  const [authReady,setAuthReady]=useState(!supabase);
+  const [mfaStatus,setMfaStatus]=useState<'checking'|'required'|'ready'>('checking');
+  const [accountTab, setAccountTab] = useState<'profile'|'address'|'orders'|'security'>('profile');
   const [account, setAccount] = useState<AccountProfile|null>(() => loadDemoAccount());
   const [couponBanner, setCouponBanner] = useState<CouponBanner>(() => readStorage(couponBannerKey, defaultCouponBanner));
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -138,12 +143,26 @@ export default function App() {
   useEffect(() => { localStorage.setItem(couponBannerKey, JSON.stringify(couponBanner)); }, [couponBanner]);
   useEffect(() => {
     if (!supabase) return;
-    supabase.auth.getUser().then(({data})=>setAccount(data.user?profileFromUser(data.user):current=>current?.demo?current:null)).catch(()=>{});
+    supabase.auth.getUser().then(({data})=>setAccount(data.user?profileFromUser(data.user):current=>current?.demo?current:null)).catch(()=>{}).finally(()=>setAuthReady(true));
     const {data:{subscription}} = supabase.auth.onAuthStateChange((_event, session)=>{
       setAccount(current=>session?.user?profileFromUser(session.user):current?.demo?current:null);
+      setAuthReady(true);
     });
     return ()=>subscription.unsubscribe();
   }, []);
+  useEffect(()=>{
+    if(!account || account.demo || !supabase){setMfaStatus('ready');return;}
+    const client=supabase;
+    let live=true;
+    setMfaStatus('checking');
+    const check=async()=>{
+      const {data,error}=await client.auth.mfa.getAuthenticatorAssuranceLevel();
+      if(!live)return;
+      setMfaStatus(!error && data?.currentLevel==='aal1' && data?.nextLevel==='aal2'?'required':'ready');
+    };
+    void check();
+    return ()=>{live=false;};
+  },[account?.id,account?.demo]);
   const updateAccount=(profile:AccountProfile|null)=>{
     setAccount(profile);
     if(profile?.demo || !profile)saveDemoAccount(profile);
@@ -154,12 +173,13 @@ export default function App() {
       setInfoTopic(topicFromHash(hash));
       setCouponsPage(hash==='#/cupons');
       setAccountPage(hash==='#/minha-conta');
+      setConfirmEmailPage(hash==='#/confirmar-email');
       setCheckoutOpen(hash==='#/checkout');
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
-  useEffect(() => { if (infoTopic||couponsPage||accountPage||checkoutOpen) window.scrollTo(0, 0); }, [infoTopic,couponsPage,accountPage,checkoutOpen]);
+  useEffect(() => { if (infoTopic||couponsPage||accountPage||checkoutOpen||confirmEmailPage) window.scrollTo(0, 0); }, [infoTopic,couponsPage,accountPage,checkoutOpen,confirmEmailPage]);
   useEffect(() => {
     if (!notice) return;
     const timer = window.setTimeout(() => setNotice(''), 2600);
@@ -273,7 +293,7 @@ export default function App() {
   };
   const openCheckout=()=>{setSelectedProductId(null);setCouponsPage(false);setAccountPage(false);setCheckoutOpen(true);window.location.hash='/checkout';window.scrollTo(0,0);};
   const openCoupons=()=>{setCouponsPage(true);setAccountPage(false);setCheckoutOpen(false);setSelectedProductId(null);window.location.hash='/cupons';window.scrollTo(0,0);};
-  const openAccount=(tab:'profile'|'address'|'orders'='profile')=>{setAccountTab(tab);setAccountPage(true);setCouponsPage(false);setCheckoutOpen(false);setSelectedProductId(null);window.location.hash='/minha-conta';window.scrollTo(0,0);};
+  const openAccount=(tab:'profile'|'address'|'orders'|'security'='profile')=>{setAccountTab(tab);setAccountPage(true);setCouponsPage(false);setCheckoutOpen(false);setSelectedProductId(null);window.location.hash='/minha-conta';window.scrollTo(0,0);};
   const closeSpecial=()=>{setCouponsPage(false);setAccountPage(false);setCheckoutOpen(false);window.location.hash='topo';window.scrollTo(0,0);};
   const openInfo = (topic: string) => {
     const slug = footerRoutes[topic];
@@ -288,6 +308,10 @@ export default function App() {
     window.scrollTo(0, 0);
   };
   // Information and detail pages are first-class views with their own footer.
+  if(confirmEmailPage) return <EmailConfirmationPage onBack={closeSpecial} onSuccess={()=>openAccount('profile')}/>;
+  if(!authReady && !account?.demo) return <div className="grid min-h-screen place-items-center bg-[#f3f6fb] text-[#0c285a]"><p className="font-black">TechStore · Verificando acesso...</p></div>;
+  if(account && !account.demo && mfaStatus==='checking') return <div className="grid min-h-screen place-items-center bg-[#f3f6fb] text-[#0c285a]"><p className="font-black">TechStore · Verificando segurança da conta...</p></div>;
+  if(account && !account.demo && mfaStatus==='required') return <MFASecurity mode="challenge" onVerified={()=>setMfaStatus('ready')} onSignOut={()=>{void supabase?.auth.signOut();setAccount(null);setMfaStatus('ready');window.location.hash='/minha-conta';}}/>;
   if (infoTopic) return <FooterInfoPage topic={infoTopic} onBack={closeInfo} onNavigate={openInfo} />;
   if (checkoutOpen) return <CheckoutPage items={cartProducts} initialCoupon={couponInput} account={account}
     onBack={closeSpecial} onQuantityChange={changeQuantity}
