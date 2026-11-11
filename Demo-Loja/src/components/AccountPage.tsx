@@ -113,7 +113,13 @@ export function AccountPage({account,orders,initialTab='profile',onBack,onChange
         setMessage('Perfil de demonstração criado neste navegador. Nenhum e-mail foi enviado.');
       }
     }catch(error){
-      setMessage(error instanceof Error?error.message:'Não foi possível concluir a operação.');}
+      const status=('status' in Object(error))?Number((error as {status?:number}).status):undefined;
+      const rawMessage=error instanceof Error?error.message:'Não foi possível concluir a operação.';
+      const signupServerError=authTab==='register'&&(status===500||/internal server error|unexpected_failure|failed to send|sending confirmation/i.test(rawMessage));
+      setMessage(signupServerError
+        ?'Não foi possível enviar a confirmação por e-mail no momento. O serviço de envio da TechStore está indisponível. Tente novamente mais tarde.'
+        :rawMessage);
+    }
     finally{setBusy(false);setPassword('');}
   };
   const save=async(event:FormEvent<HTMLFormElement>)=>{
