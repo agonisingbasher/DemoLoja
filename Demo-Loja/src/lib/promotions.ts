@@ -17,5 +17,14 @@ export function calculateCoupon(code: string, items: BasketItem[]): { discount: 
   const base = coupon.type === 'percent' ? eligible * coupon.value / 100 : coupon.value;
   return { discount: Math.round(Math.min(eligible, base, coupon.maxDiscount ?? Infinity)*100)/100, error: '', coupon };
 }
-export const money = (n: number) => n.toLocaleString('pt-BR', {style:'currency',currency:'BRL'});
+const currencyLocale=()=>{
+  try{
+    const selected=localStorage.getItem('techstore_language_v1');
+    if(selected==='en')return 'en-US';
+    if(selected==='es')return 'es-ES';
+    if(selected==='fr')return 'fr-FR';
+  }catch{/* Storage may be disabled */}
+  return 'pt-BR';
+};
+export const money = (n: number) => n.toLocaleString(currencyLocale(), {style:'currency',currency:'BRL'});
 export const installments = (amount:number, count=10) => money(amount/count);
