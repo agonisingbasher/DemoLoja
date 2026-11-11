@@ -122,6 +122,17 @@ export default function App() {
   const [accountPage, setAccountPage] = useState(() => window.location.hash === '#/minha-conta');
   const [confirmEmailPage,setConfirmEmailPage]=useState(()=>window.location.hash==='#/confirmar-email');
   const [authReady,setAuthReady]=useState(!supabase);
+  useEffect(()=>{
+    const fragment=new URLSearchParams(window.location.hash.replace(/^#/,''));
+    const query=new URLSearchParams(window.location.search);
+    const errorCode=fragment.get('error_code')||query.get('error_code');
+    if(errorCode==='otp_expired'||errorCode==='access_denied'||fragment.has('error')){
+      try{sessionStorage.setItem('techstore_confirmation_error','O link de confirmação foi utilizado anteriormente ou expirou. Solicite um novo código para confirmar seu cadastro.');}catch{/* No storage */}
+      window.history.replaceState(null,'',window.location.pathname+'#/confirmar-email');
+      setConfirmEmailPage(true);
+    }
+  },[]);
+
   const [mfaStatus,setMfaStatus]=useState<'checking'|'required'|'ready'>('checking');
   const [accountTab, setAccountTab] = useState<'profile'|'address'|'orders'|'security'>('profile');
   const [account, setAccount] = useState<AccountProfile|null>(() => loadDemoAccount());
