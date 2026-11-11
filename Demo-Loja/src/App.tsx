@@ -403,7 +403,7 @@ export default function App() {
           </form>
         </div>
       )}
-      {adminOpen && <AdminPanel products={products} sales={sales} onAddProduct={product=>setProducts(current=>[product,...current])} onDeleteProduct={id=>{setProducts(current=>current.filter(p=>p.id!==id));setCart(current=>current.filter(line=>line.productId!==id));}} onUpdateStock={(id,stock)=>setProducts(current=>current.map(p=>p.id===id?{...p,stock}:p))} onLogout={()=>setAdminOpen(false)}/>}
+      {adminOpen && <AdminPanel products={products} sales={sales} onAddProduct={product=>setProducts(current=>[product,...current])} onDeleteProduct={id=>{setProducts(current=>current.filter(p=>p.id!==id));setCart(current=>current.filter(line=>line.productId!==id));}} onUpdateStock={(id,stock)=>setProducts(current=>current.map(p=>p.id===id?{...p,stock}:p))} onLogout={()=>setAdminOpen(false)} onUpdateSaleStatus={(id,status)=>setSales(current=>current.map(s=>s.id===id?{...s,status}:s))} onUpdateProduct={(id,patch)=>setProducts(current=>current.map(p=>p.id===id?{...p,...patch}:p))} onSeedDemoSales={items=>setSales(current=>current.length?current:items)}/>}
 
       {cartOpen && (
         <div className="fixed inset-0 z-[70] flex justify-end bg-slate-950/50" onMouseDown={(event) => { if (event.target === event.currentTarget) setCartOpen(false); }}>
