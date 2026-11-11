@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle2, Heart, Minus, Plus, Search, ShieldCheck, ShoppingCart, Trash2, X } from 'lucide-react';
+import { ArrowRight, Bell, BadgePercent, CheckCircle2, Cpu, Gift, Heart, Minus, Plus, Search, ShieldCheck, ShoppingCart, Sparkles, Tag, Trash2, Truck, X, Zap } from 'lucide-react';
 import { CategoryFilter } from './components/CategoryFilter';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
@@ -7,6 +7,10 @@ import { Hero } from './components/Hero';
 import { ProductCard } from './components/ProductCard';
 import { AdminPanel, type DemoSale } from './components/AdminPanel';
 import { FooterInfoPage } from './components/FooterInfoPage';
+import { ProductDetailsPage } from './components/ProductDetailsPage';
+import { PCBuilder } from './components/PCBuilder';
+import { categoryIcons } from './components/CategoryFilter';
+import { calculateCoupon, coupons } from './lib/promotions';
 import { catalogProducts } from './lib/catalogProducts';
 import type { Category, Product } from './lib/supabase';
 
@@ -35,6 +39,7 @@ const categories: Category[] = [
   { id: 'perifericos', name: 'Periféricos', slug: 'perifericos', created_at: '' },
   { id: 'acessorios', name: 'Acessórios', slug: 'acessorios', created_at: '' },
   { id: 'cadeiras', name: 'Cadeiras', slug: 'cadeiras', created_at: '' },
+  { id: 'componentes', name: 'Peças para PC', slug: 'componentes', created_at: '' },
 ];
 const formatPrice = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 function readStorage<T,>(key: string, fallback: T): T {
@@ -48,7 +53,16 @@ function readStorage<T,>(key: string, fallback: T): T {
 
 // TechStore demo storefront with local admin, inventory and sales state.
 export default function App() {
-  const [products, setProducts] = useState<Product[]>(() => readStorage(PRODUCTS_KEY, catalogProducts as Product[]));
+  const [products, setProducts] = useState<Product[]>(() => {
+    const defaults = catalogProducts as Product[];
+    const stored = readStorage(PRODUCTS_KEY, defaults);
+    // Retain users' local demo stock and prices, but repair outdated images and add new SKUs.
+    const repaired = stored.map(product => {
+      const source = defaults.find(item => item.id === product.id);
+      return source && source.image_url.includes('/images/') ? { ...product, image_url: source.image_url } : product;
+    });
+    return [...repaired, ...defaults.filter(product => !repaired.some(old => old.id === product.id))];
+  });
   const [sales, setSales] = useState<DemoSale[]>(() => readStorage(SALES_KEY, []));
   const [adminOpen, setAdminOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -61,6 +75,15 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('featured');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [page, setPage] = useState(1);
+  const [couponsOpen, setCouponsOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState('');
+  const [delivery, setDelivery] = useState<'economico'|'expresso'|'retirada'>('economico');
+  const [checkoutCep, setCheckoutCep] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'card'|'pix'|'boleto'>('card');
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [notice, setNotice] = useState('');
@@ -100,15 +123,37 @@ export default function App() {
       if (sort === 'name') return a.name.localeCompare(b.name, 'pt-BR');
       return Number(b.featured) - Number(a.featured);
     });
-  }, [category, favorites, favoritesOnly, search, sort]);
+  }, [products, category, favorites, favoritesOnly, search, sort]);
+  useEffect(() => { setPage(1); }, [category, favoritesOnly, search, sort]);
+  const pages = Math.max(1, Math.ceil(filteredProducts.length / 9));
+  const pagedProducts = filteredProducts.slice((page-1)*9,page*9);
+  const offers = products.filter(product => product.original_price && product.original_price > product.price && product.stock>0).sort((a,b)=>((b.original_price||0)-b.price)-((a.original_price||0)-a.price)).slice(0,4);
+  const favoriteCategories = new Set(products.filter(product=>favorites.includes(product.id)).map(product=>product.category_id));
+  const recommendations = products.filter(product=>product.stock>0).sort((a,b)=>Number(favoriteCategories.has(b.category_id))-Number(favoriteCategories.has(a.category_id)) || b.rating-a.rating).slice(0,4);
 
   const cartProducts = cart
     .map((line) => ({ ...line, product: products.find((product) => product.id === line.productId) }))
     .filter((line): line is CartLine & { product: Product } => Boolean(line.product));
   const itemCount = cart.reduce((sum, line) => sum + line.quantity, 0);
   const subtotal = cartProducts.reduce((sum, line) => sum + line.product.price * line.quantity, 0);
-  const shipping = subtotal === 0 || subtotal >= 499 ? 0 : 19.9;
-  const total = subtotal + shipping;
+  const shipping = !subtotal || delivery==='retirada' ? 0 : delivery==='expresso' ? 34.90 : subtotal>=499 ? 0 : 19.90;
+  const couponResult = appliedCoupon ? calculateCoupon(appliedCoupon, cartProducts.map(({product,quantity})=>({category_id:product.category_id,price:product.price,quantity}))) : {discount:0,error:''};
+  const discount = couponResult.discount;
+  const pixDiscount = paymentMethod==='pix' ? Math.round(Math.max(0,subtotal-discount)*5)/100 : 0;
+  const total = Math.max(0,subtotal-discount-pixDiscount)+shipping;
+  const applyCoupon=(code:string)=>{
+    const result=calculateCoupon(code,cartProducts.map(({product,quantity})=>({category_id:product.category_id,price:product.price,quantity})));
+    if(result.error){setNotice(result.error);return;}
+    setAppliedCoupon(code.trim().toUpperCase());setCouponInput(code.trim().toUpperCase());
+    setCouponsOpen(false);setNotice('Cupom demonstrativo '+code.toUpperCase()+' aplicado!');
+  };
+  const addBuildToCart=(ids:string[])=>{
+    if(!ids.length)return;
+    const current = new Map(cart.map(item=>[item.productId,item.quantity]));
+    if(ids.some(id=>{const p=products.find(product=>product.id===id);return !p || (current.get(id)||0)+ids.filter(x=>x===id).length>p.stock;})){setNotice('Confira o estoque disponível dos itens selecionados.');return;}
+    setCart(old=>{const next=new Map(old.map(line=>[line.productId,line.quantity]));ids.forEach(id=>next.set(id,(next.get(id)||0)+1));return Array.from(next,([productId,quantity])=>({productId,quantity}));});
+    setBuilderOpen(false);setCartOpen(true);setNotice('Montagem adicionada ao carrinho de demonstração.');
+  };
 
   const addToCart = (productId: string) => {
     const product = products.find((item) => item.id === productId);
@@ -156,7 +201,7 @@ export default function App() {
       customer: String(form.get('customer') || 'Cliente demonstrativo'),
       email: String(form.get('email') || 'sem-email@demo.local'),
       date: new Date().toISOString(),
-      total,
+      total, status:'Recebido', paymentMethod, couponCode:appliedCoupon||undefined, discount:discount+pixDiscount, shipping,
       items: cartProducts.map(({ product, quantity }) => ({ productId: product.id, name: product.name, quantity, unitPrice: product.price })),
     };
     setSales(current => [...current, sale]);
@@ -168,6 +213,7 @@ export default function App() {
     setCart([]);
     setCheckoutOpen(false);
     setCartOpen(false);
+    setAppliedCoupon('');setCouponInput('');setPaymentMethod('card');setDelivery('economico');setCheckoutCep('');
     setNotice('Pedido demonstrativo concluído!');
   };
 
@@ -183,8 +229,16 @@ export default function App() {
     setInfoTopic(null);
     window.scrollTo(0, 0);
   };
-  // Information pages replace the storefront instead of appearing after its footer.
+  // Information and detail pages are first-class views with their own footer.
   if (infoTopic) return <FooterInfoPage topic={infoTopic} onBack={closeInfo} onNavigate={openInfo} />;
+  if (selectedProduct) return <ProductDetailsPage
+    product={selectedProduct} products={products} favorite={favorites.includes(selectedProduct.id)}
+    onToggleFavorite={toggleFavorite} onBack={()=>{setSelectedProductId(null);window.scrollTo(0,0);}}
+    onAddToCart={id=>{addToCart(id);setSelectedProductId(null);setCartOpen(true);}}
+    onViewProduct={id=>{setSelectedProductId(id);window.scrollTo(0,0);}}
+    onOpenCart={()=>{setSelectedProductId(null);setCartOpen(true);}}
+    onInfoClick={topic=>{setSelectedProductId(null);openInfo(topic);}}
+  />;
   return (
     <div id="topo" className="min-h-screen bg-slate-50">
       <Header
@@ -193,6 +247,11 @@ export default function App() {
         onLoginClick={() => setLoginOpen(true)}
         searchTerm={search}
         onSearchChange={setSearch}
+        onBuilderClick={()=>setBuilderOpen(true)}
+        onCouponsClick={()=>setCouponsOpen(true)}
+        onNotificationsClick={()=>setNotificationsOpen(true)}
+        onFavoritesClick={()=>{setFavoritesOnly(v=>!v);document.getElementById('catalogo')?.scrollIntoView({behavior:'smooth'});}}
+        favoritesCount={favorites.length}
       />
       <Hero />
       <main id="catalogo" className="container mx-auto px-4 py-12">
@@ -233,7 +292,7 @@ export default function App() {
             </div>
             {filteredProducts.length ? (
               <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {filteredProducts.map((product) => (
+                {pagedProducts.map((product) => (
                   <div key={product.id} className="relative">
                     <button
                       type="button"
@@ -285,43 +344,6 @@ export default function App() {
         </div>
       )}
       {adminOpen && <AdminPanel products={products} sales={sales} onAddProduct={product=>setProducts(current=>[product,...current])} onDeleteProduct={id=>{setProducts(current=>current.filter(p=>p.id!==id));setCart(current=>current.filter(line=>line.productId!==id));}} onUpdateStock={(id,stock)=>setProducts(current=>current.map(p=>p.id===id?{...p,stock}:p))} onLogout={()=>setAdminOpen(false)}/>}
-
-      {selectedProduct && (
-        <div className="fixed inset-0 z-[65] overflow-y-auto bg-slate-50">
-          <div className="min-h-screen">
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-4 shadow-sm backdrop-blur">
-              <button type="button" onClick={() => setSelectedProductId(null)} className="inline-flex items-center gap-2 font-semibold text-slate-700 hover:text-orange-600"><ArrowLeft size={20} /> Voltar à loja</button>
-              <span className="font-black text-orange-600">TechStore</span>
-            </div>
-            <main className="container mx-auto grid max-w-6xl gap-10 px-4 py-10 md:grid-cols-2 md:py-16">
-              <div className="flex min-h-[320px] items-center justify-center rounded-3xl bg-white p-6 shadow-sm md:min-h-[520px]">
-                <img src={selectedProduct.image_url || 'https://placehold.co/800x800?text=TechStore'} alt={selectedProduct.name} onError={(event) => { event.currentTarget.src = 'https://placehold.co/800x800?text=Imagem+indisponivel'; }} className="max-h-[480px] w-full object-contain" />
-              </div>
-              <div className="flex flex-col justify-center">
-                <p className="text-sm font-bold uppercase tracking-[0.2em] text-orange-600">Detalhes do produto</p>
-                <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">{selectedProduct.name}</h1>
-                <div className="mt-4 flex items-center gap-2 text-amber-500"><span>★★★★★</span><span className="text-sm font-semibold text-slate-600">{selectedProduct.rating.toFixed(1)} / 5.0</span></div>
-                <p className="mt-6 text-lg leading-8 text-slate-600">{selectedProduct.details || selectedProduct.description}</p>
-                <div className="mt-7 rounded-2xl bg-white p-5 shadow-sm">
-                  {selectedProduct.original_price && <p className="text-sm text-slate-400 line-through">{formatPrice(selectedProduct.original_price)}</p>}
-                  <p className="text-4xl font-black text-orange-600">{formatPrice(selectedProduct.price)}</p>
-                  <p className={`mt-2 text-sm font-semibold ${selectedProduct.stock > 0 ? 'text-emerald-600' : 'text-red-600'}`}>{selectedProduct.stock > 0 ? `Em estoque: ${selectedProduct.stock} unidade(s)` : 'Produto esgotado'}</p>
-                  <button type="button" disabled={selectedProduct.stock <= 0} onClick={() => addToCart(selectedProduct.id)} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-6 py-4 font-bold text-white transition hover:bg-orange-700 disabled:bg-slate-300"><ShoppingCart size={20} /> Adicionar ao carrinho</button>
-                </div>
-                {selectedProduct.features?.length ? (
-                  <div className="mt-8">
-                    <h2 className="text-lg font-bold text-slate-900">Características</h2>
-                    <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-                      {selectedProduct.features.map((feature) => <li key={feature} className="flex items-start gap-2 text-sm text-slate-600"><CheckCircle2 size={17} className="mt-0.5 shrink-0 text-emerald-500" />{feature}</li>)}
-                    </ul>
-                  </div>
-                ) : null}
-                <p className="mt-8 text-xs leading-5 text-slate-400">Produto e valores ilustrativos. Esta loja é uma demonstração e não processa pagamentos reais.</p>
-              </div>
-            </main>
-          </div>
-        </div>
-      )}
 
       {cartOpen && (
         <div className="fixed inset-0 z-[70] flex justify-end bg-slate-950/50" onMouseDown={(event) => { if (event.target === event.currentTarget) setCartOpen(false); }}>
