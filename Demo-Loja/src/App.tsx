@@ -498,7 +498,7 @@ export default function App() {
 
 
       {loginOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/70 p-4">
+        <div data-techstore-overlay className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/70 p-4">
           <form onSubmit={(event) => { event.preventDefault(); if (username === 'admin' && password === 'admin') { setLoginOpen(false); setAdminOpen(true); setLoginError(''); setUsername(''); setPassword(''); } else setLoginError('Usuário ou senha incorretos.'); }} className="w-full max-w-md rounded-3xl bg-white p-7 shadow-2xl">
             <div className="mb-6 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-widest text-orange-600">Área restrita</p><h2 className="mt-1 text-2xl font-black text-slate-900">Entrar na administração</h2></div><button type="button" onClick={() => setLoginOpen(false)} className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X/></button></div>
             <label className="mb-4 block text-sm font-semibold text-slate-700">Usuário<input autoComplete="username" value={username} onChange={e=>setUsername(e.target.value)} className="mt-1.5 w-full rounded-xl border px-4 py-3"/></label>
@@ -511,7 +511,7 @@ export default function App() {
       )}
       {adminOpen && <AdminPanel products={products} sales={sales} onAddProduct={product=>setProducts(current=>[product,...current])} onDeleteProduct={id=>{setProducts(current=>current.filter(p=>p.id!==id));setCart(current=>current.filter(line=>line.productId!==id));}} onUpdateStock={(id,stock)=>setProducts(current=>current.map(p=>p.id===id?{...p,stock}:p))} onLogout={()=>setAdminOpen(false)} onUpdateSaleStatus={(id,status)=>setSales(current=>current.map(s=>s.id===id?{...s,status,trackingManual:true}:s))} onUpdateProduct={(id,patch)=>setProducts(current=>current.map(p=>p.id===id?{...p,...patch}:p))} onSeedDemoSales={items=>setSales(current=>current.length?current:items)} couponBanner={couponBanner} onUpdateCouponBanner={setCouponBanner}/>}
 
-      {notificationsOpen && <div role="dialog" aria-modal="true" aria-label="Notificações da TechStore" className="fixed inset-0 z-[135] flex items-center justify-center bg-slate-950/70 p-4">
+      {notificationsOpen && <div role="dialog" aria-modal="true" aria-label="Notificações da TechStore" data-techstore-overlay className="fixed inset-0 z-[135] flex items-center justify-center bg-slate-950/70 p-4">
         <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
           <div className="flex justify-between"><div><p className="text-xs font-black uppercase tracking-widest text-orange-600">Caixa de avisos</p><h2 className="mt-2 text-2xl font-black">Notificações</h2></div><button aria-label="Fechar avisos" onClick={()=>setNotificationsOpen(false)}><X/></button></div>
           <div className="mt-6 space-y-4">
