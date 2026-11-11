@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Browser-safe publishable key only. NEVER use a service-role or secret key here.
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://akcwdobzjffoaqyudurc.supabase.co';
+const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_u_x-93mr70SErkvseee_Gw_y0AeAhye';
 
 // Pages has no backend. Keep the demo functional until Auth credentials are configured.
 export const supabase = supabaseUrl && supabasePublishableKey
