@@ -26,6 +26,21 @@ Catálogo de 40 produtos, categorias com ícones, ofertas, favoritos, busca, pag
 
 O carrinho, preferências e parte da administração continuam armazenados no navegador. Cadastro e login reais usam Supabase Auth. O HTML do novo e-mail de confirmação foi preparado, mas precisa ser aplicado em Authentication > Email Templates, e um provedor SMTP externo deve ser configurado para envio confiável a visitantes externos.
 
+## Idiomas disponíveis
+
+A interface TechStore oferece **quatro idiomas**, com seleção por bandeira no topo e acesso rápido persistente nas subpáginas e modais:
+
+- 🇧🇷 Português: https://agonisingbasher.github.io/DemoLoja/?lang=pt-BR#topo
+- 🇪🇸 Español: https://agonisingbasher.github.io/DemoLoja/?lang=es#topo
+- 🇺🇸 English: https://agonisingbasher.github.io/DemoLoja/?lang=en#topo
+- 🇫🇷 Français: https://agonisingbasher.github.io/DemoLoja/?lang=fr#topo
+
+A escolha fica no armazenamento local do navegador e na query string ?lang=, sem alterar o hash das rotas. O sistema traduz componentes da vitrine, descrições e características do catálogo, páginas de produto, carrinho, as seis etapas do checkout, página de cupons, montador de PC, login/conta, 2FA, rastreio de pedidos, modais, administração, rodapé e páginas institucionais.
+
+Nomes comerciais, nomes de pessoas, dados fornecidos pelo usuário, códigos de cupons e identificadores técnicos são mantidos. Preços permanecem em BRL, com apresentação numérica apropriada ao idioma. Traduções de conteúdo cadastrado posteriormente no painel (como banners personalizados) devem ser revisadas manualmente.
+
+**Implementação:** src/i18n/ contém dicionários, contexto React, persistência e traduções das mensagens dinâmicas, sem enviar dados pessoais para serviços externos de tradução.
+
 ## Executar
 
 Use Node.js e npm:
