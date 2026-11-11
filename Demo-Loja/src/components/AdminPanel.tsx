@@ -117,7 +117,7 @@ export function AdminPanel({ products, sales, onAddProduct, onDeleteProduct, onU
     { id: 'marketing', label: 'Campanhas e cupons', icon: Gift },
     { id: 'analytics', label: 'Relatórios', icon: BarChart3 },
   ] as const;
-  return <div className="fixed inset-0 z-[120] overflow-y-auto bg-[#f4f6fa] text-slate-900">
+  return <div data-techstore-overlay className="fixed inset-0 z-[120] overflow-y-auto bg-[#f4f6fa] text-slate-900">
     <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950 px-4 py-4 text-white shadow-lg sm:px-7">
       <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-orange-600 text-xl font-black">T</span><div><p className="text-xs font-bold uppercase tracking-widest text-orange-400">TechStore / Workspace</p><h1 className="text-xl font-black tracking-tight">Painel de controle <span className="ml-2 rounded-md bg-orange-500/20 px-2 py-1 text-xs text-orange-200">DEMO</span></h1></div></div>
