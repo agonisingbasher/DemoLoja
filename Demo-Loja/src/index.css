@@ -14,3 +14,36 @@ body { margin: 0; min-width: 320px; min-height: 100vh; }
 button, input, select { font: inherit; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #fdba74; outline-offset: 2px; }
 ::selection { background: #fed7aa; color: #7c2d12; }
+
+/* Checkout stage indicator: a sweep from right to left, then a pulled return to the right. */
+.checkout-flow-line {
+  position: relative;
+  width: 100%;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5eaf2;
+  isolation: isolate;
+}
+.checkout-flow-line__stroke {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  border-radius: inherit;
+  transform-origin: right center;
+  background: linear-gradient(90deg, #f97316 0%, #fb923c 52%, #fdba74 100%);
+  box-shadow: 0 0 10px rgba(249, 115, 22, .25);
+  animation: techstore-line-pull 3.4s cubic-bezier(.52, .02, .34, 1) infinite;
+  will-change: clip-path;
+}
+@keyframes techstore-line-pull {
+  0%   { clip-path: inset(0 0 0 100% round 999px); }
+  43%  { clip-path: inset(0 0 0 0 round 999px); }
+  52%  { clip-path: inset(0 0 0 0 round 999px); }
+  92%  { clip-path: inset(0 0 0 100% round 999px); }
+  100% { clip-path: inset(0 0 0 100% round 999px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .checkout-flow-line__stroke { animation: none; clip-path: inset(0 0 0 0 round 999px); }
+}
