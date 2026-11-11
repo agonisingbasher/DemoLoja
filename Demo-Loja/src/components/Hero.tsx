@@ -18,7 +18,7 @@ export const Hero = () => <section className="relative isolate overflow-hidden b
         <img src={import.meta.env.BASE_URL+'images/switch2.svg'} alt="Ilustração demonstrativa de console portátil para jogos" className="mx-auto h-56 w-full rounded-2xl object-contain shadow-xl sm:h-64"/>
         <div className="mt-5 flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-widest text-orange-400">Nova geração no catálogo</p><p className="mt-1 text-2xl font-black">Explore o universo Switch 2</p><p className="mt-1 text-xs text-slate-400">Console, controles e acessórios · Promoções ilustrativas</p></div><a href="#catalogo" className="rounded-xl bg-white/10 px-4 py-3 text-sm font-black text-white hover:bg-white/20">Ver produtos →</a></div>
       </div>
-      <div className="absolute -bottom-4 -left-4 hidden rounded-2xl border border-white/10 bg-white px-5 py-3 shadow-xl sm:block"><p className="text-xs font-bold text-slate-500">Monte seu setup</p><p className="mt-0.5 text-lg font-black text-slate-950">Peça por peça ↗</p></div>
+      
     </div>
   </div>
 </section>;
