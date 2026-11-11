@@ -12,7 +12,7 @@ type CheckoutItem={product:Product;quantity:number};
 type Props={
   items:CheckoutItem[];initialCoupon:string;account:AccountProfile|null;
   onBack:()=>void;onQuantityChange:(id:string,delta:number)=>void;onRemove:(id:string)=>void;
-  onFinish:(payload:CheckoutSubmission)=>string;onCompleted:()=>void;onViewOrders:()=>void;
+  onFinish:(payload:CheckoutSubmission)=>Promise<string>;onCompleted:()=>void;onViewOrders:()=>void;
 };
 const steps=[
   {label:'Carrinho',icon:ShoppingCart},{label:'Endereço',icon:MapPin},
@@ -46,6 +46,7 @@ export function CheckoutPage({items,initialCoupon,account,onBack,onQuantityChang
   const [coupon,setCoupon]=useState(initialCoupon);
   const [message,setMessage]=useState('');
   const [orderId,setOrderId]=useState('');
+  const [finishing,setFinishing]=useState(false);
   const [completedItems,setCompletedItems]=useState<CheckoutItem[]>([]);
   const [completedTotal,setCompletedTotal]=useState(0);
   const subtotal=items.reduce((sum,item)=>sum+item.product.price*item.quantity,0);
@@ -68,10 +69,15 @@ export function CheckoutPage({items,initialCoupon,account,onBack,onQuantityChang
     if(step===1&&!canAddress){setMessage('Preencha os dados de faturamento e endereço com informações fictícias válidas para continuar.');return;}
     if(step<4){setStep(n=>n+1);window.scrollTo(0,0);}
   };
-  const complete=(event:FormEvent)=>{
+  const complete=async(event:FormEvent)=>{
     event.preventDefault();if(!canAddress||!items.length){setMessage('Confira os dados do pedido antes de concluir.');return;}
-    const id=onFinish({customer:invoice.name.trim(),email:account?.email||invoice.email.trim(),total,shipping,discount:discount+pixDiscount,paymentMethod:payment,couponCode:coupon||undefined});
-    setOrderId(id);setCompletedItems([...items]);setCompletedTotal(total);setStep(5);window.scrollTo(0,0);
+    if(finishing)return;
+    setFinishing(true);setMessage('');
+    try{
+      const id=await onFinish({customer:invoice.name.trim(),email:account?.email||invoice.email.trim(),total,shipping,discount:discount+pixDiscount,paymentMethod:payment,couponCode:coupon||undefined});
+      setOrderId(id);setCompletedItems([...items]);setCompletedTotal(total);setStep(5);window.scrollTo(0,0);
+    }catch(error){setMessage(error instanceof Error?error.message:'Não foi possível registrar o pedido.');}
+    finally{setFinishing(false);}
   };
   const field=(label:string,value:string,onChange:(s:string)=>void,placeholder:string,required=true)=><label className="block text-sm font-bold text-slate-700">{label}{required?' *':''}<input required={required} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-normal text-slate-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"/></label>;
   const subtotalLabel=items.reduce((count,item)=>count+item.quantity,0);
@@ -118,7 +124,7 @@ export function CheckoutPage({items,initialCoupon,account,onBack,onQuantityChang
           </section>}
           {step===5&&<section className="rounded-2xl border border-emerald-200 bg-white p-7 text-center shadow-sm sm:p-12"><CheckCircle2 size={70} className="mx-auto text-emerald-600"/><h2 className="mt-5 text-3xl font-black">Obrigado por explorar a TechStore!</h2><p className="mt-3 text-slate-600">Seu pedido de demonstração foi registrado neste navegador.</p><p className="mt-4 rounded-xl bg-emerald-50 p-4 text-lg font-black text-emerald-800">Código: {orderId}</p><p className="mt-4 text-sm">Total ilustrativo: <strong>{money(completedTotal)}</strong></p><p className="mt-2 text-xs text-slate-500">{completedItems.length} tipo(s) de produto. Não enviamos e-mail, nota fiscal, cobrança ou mercadoria.</p><div className="mt-8 flex flex-wrap justify-center gap-3"><button onClick={()=>window.print()} className="flex items-center gap-2 rounded-xl border px-5 py-3 font-bold"><Printer size={18}/> Imprimir resumo</button><button onClick={onViewOrders} className="flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-3 font-bold text-white"><Package size={18}/> Ver meus pedidos</button><button onClick={onCompleted} className="flex items-center gap-2 rounded-xl border px-5 py-3 font-bold text-slate-800">Voltar à loja <ArrowRight size={18}/></button></div></section>}
           {message&&step!==5&&<p role="alert" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">{message}</p>}
-          {step<5&&<div className="mt-7 flex flex-wrap justify-between gap-3"><button onClick={()=>step===0?onBack():setStep(n=>n-1)} className="flex items-center gap-2 rounded-xl border bg-white px-5 py-3 font-bold"><ArrowLeft size={17}/>{step===0?'Continuar comprando':'Etapa anterior'}</button>{step===4?<button onClick={complete} className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-4 font-black text-white hover:bg-emerald-700"><CheckCircle2 size={20}/> Concluir pedido de demonstração</button>:<button onClick={next} className="flex items-center gap-2 rounded-xl bg-orange-600 px-6 py-4 font-black text-white hover:bg-orange-700">Continuar <ArrowRight size={18}/></button>}</div>}
+          {step<5&&<div className="mt-7 flex flex-wrap justify-between gap-3"><button onClick={()=>step===0?onBack():setStep(n=>n-1)} className="flex items-center gap-2 rounded-xl border bg-white px-5 py-3 font-bold"><ArrowLeft size={17}/>{step===0?'Continuar comprando':'Etapa anterior'}</button>{step===4?<button disabled={finishing} onClick={complete} className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-4 font-black text-white hover:bg-emerald-700 disabled:opacity-50"><CheckCircle2 size={20}/> Concluir pedido de demonstração</button>:<button onClick={next} className="flex items-center gap-2 rounded-xl bg-orange-600 px-6 py-4 font-black text-white hover:bg-orange-700">Continuar <ArrowRight size={18}/></button>}</div>}
         </div>
         {!isFinished&&<aside className="h-fit rounded-2xl border bg-white p-5 shadow-sm lg:sticky lg:top-7">
           <h2 className="mb-5 flex items-center gap-2 text-lg font-black"><Package size={21} className="text-orange-600"/> Resumo do pedido</h2>
