@@ -1,35 +1,87 @@
-# TechStore — cadastro real, confirmação por e-mail e segurança
+# TechStore — conclusão do e-mail de confirmação e 2FA
 
-## Já está configurado (11/11/2026)
-- Projeto **TechStore** no Supabase, região São Paulo, ID: `akcwdobzjffoaqyudurc`.
-- O frontend GitHub Pages usa a URL do projeto e a **chave pública publishable**; não há chave secreta no navegador.
-- Login/cadastro usam `supabase.auth.signUp` e `signInWithPassword`, com confirmação de e-mail quando o remetente estiver configurado.
-- Catálogo de 40 produtos no banco; pedidos de contas autenticadas são registrados pelo RPC `create_demo_order` usando preços do banco, com limite de 20 por conta/24h.
-- Tabela `store_reviews` com RLS: só é possível publicar avaliação de item presente em pedido demonstrativo registrado pela conta; apenas uma por conta e produto.
-- Supabase Cron `techstore-cleanup-7d`: diariamente às 03:15 UTC remove pedidos e avaliações demonstrativos com mais de sete dias. **Não exclui contas reais de autenticação nem endereços de usuários autenticados.**
-- Perfil local continua opcional para testes enquanto o e-mail transacional não estiver pronto. Perfis locais, carrinhos e histórico de demonstração são limpos após sete dias ao reabrir o site.
+## Diagnóstico confirmado em 11/11/2026
 
-## Ainda precisa ser habilitado pelo proprietário: envio de e-mail real para qualquer pessoa
+Os logs do Supabase registraram:
+- Um cadastro **confirmado** pela rota /verify às 04:43:01 UTC.
+- Uma segunda tentativa de usar um token às 04:43:24 UTC, com **403 — Email link is invalid or has expired / One-time token not found**.
+- Referências ao endereço de desenvolvimento http://localhost:3000, que não deve ser o Site URL da TechStore publicada.
 
-O SMTP de testes do Supabase **só envia mensagens a e-mails previamente autorizados da equipe**. Para visitantes externos é obrigatório conectar um provedor SMTP e validar um remetente.
+Isso é compatível com reutilização de link de uso único ou com um sistema de segurança de e-mail que abriu o link antes da pessoa. O motivo exato do segundo acesso não pode ser determinado apenas pelos logs.
 
-1. Abra **[Supabase → Authentication → SMTP](https://supabase.com/dashboard/project/akcwdobzjffoaqyudurc/auth/smtp)**.
-2. Em um provedor transacional como Resend, Brevo ou Postmark, crie/valide seu remetente. Dependendo do serviço, é necessário possuir um domínio próprio e configurar DNS SPF/DKIM/DMARC.
-3. No Supabase, habilite **Custom SMTP** e informe **host, porta, usuário SMTP, senha SMTP, e-mail remetente e nome "TechStore"**, obtidos diretamente no provedor. **Nunca comite, envie no chat ou exponha a senha SMTP no GitHub Pages.**
-4. Em **[Authentication → URL Configuration](https://supabase.com/dashboard/project/akcwdobzjffoaqyudurc/auth/url-configuration)**, configure Site URL e Redirect URLs com `https://agonisingbasher.github.io/DemoLoja/`.
-5. Em **[Authentication → Providers → Email](https://supabase.com/dashboard/project/akcwdobzjffoaqyudurc/auth/providers)**, mantenha **Confirm email** habilitado.
-6. Em **[Authentication → Email Templates](https://supabase.com/dashboard/project/akcwdobzjffoaqyudurc/auth/templates)**, selecione **Confirm signup**, use o assunto `Bem-vindo à TechStore — confirme seu e-mail` e cole o conteúdo de `Demo-Loja/supabase/confirmation-email.html`.
-7. Faça um cadastro com caixa de entrada de teste **fora da equipe Supabase**, confirme o recebimento e clique no link de ativação. Consulte Auth logs para conferir erros, bloqueios, SPF/DKIM e limites de envio.
-8. Para liberar cadastros publicamente, configure proteção anti-bot e limites de envio em **Authentication → Rate Limits/CAPTCHA**, evitando abuso e spam.
+O banco registra um usuário com e-mail já confirmado. Se esse for o seu cadastro, **tente entrar normalmente antes de solicitar outra confirmação**.
 
-O e-mail de confirmação já inclui o agradecimento pelo cadastro. Para enviar uma **segunda mensagem independente de boas-vindas**, além da confirmação, será necessária uma Edge Function ou outro backend associado ao serviço de e-mail.
+## Parte já implementada no código
 
-## Observações essenciais
+- Página https://agonisingbasher.github.io/DemoLoja/#/confirmar-email.
+- Verificação de OTP de e-mail via Supabase Auth.
+- Reenvio de confirmação de cadastro.
+- Template HTML completamente personalizado com azul-marinho e laranja, texto de boas-vindas, token e botão para abrir a página de confirmação.
+- Segurança de conta por **TOTP** (aplicativo autenticador): cadastro via QR Code, verificação do código, login com segundo fator e desativação autenticada.
+- RLS de dados pessoais, pedidos e avaliações exige **AAL2** quando o cliente já cadastrou um fator verificado.
 
-- O checkout continua 100% **simulado**, sem pagamentos nem nota fiscal.
-- A avaliação vinculada ao pedido Supabase atesta apenas que a conta registrou uma **compra de demonstração**, não que fez pagamento ou recebeu mercadoria.
-- Não execute limpeza automática em `auth.users`: isso destruiria contas reais. A política de sete dias se aplica somente aos dados de teste.
-- O painel `admin/admin` é uma **demonstração visual local**, não uma permissão administrativa válida no banco.
-- Nunca coloque chave `service_role`, `secret` ou senha SMTP no código Vite ou em configurações públicas.
+## Ainda exige sua ação no painel Supabase
 
-Fontes: https://supabase.com/docs/guides/auth/auth-smtp e https://supabase.com/docs/guides/auth/passwords e https://supabase.com/docs/guides/cron
+### 1. Corrigir Site URL e redirecionamentos
+
+Abra Authentication > URL Configuration:
+
+https://supabase.com/dashboard/project/akcwdobzjffoaqyudurc/auth/url-configuration
+
+Defina **Site URL** exatamente como:
+
+https://agonisingbasher.github.io/DemoLoja/
+
+Em **Redirect URLs**, autorize também o mesmo endereço:
+
+https://agonisingbasher.github.io/DemoLoja/
+
+Remova localhost:3000 como Site URL da aplicação publicada. Mantenha localhost apenas para desenvolvimento, se precisar.
+
+### 2. Ativar o e-mail com a identidade TechStore
+
+Abra Authentication > Email Templates > Confirm sign up:
+
+https://supabase.com/dashboard/project/akcwdobzjffoaqyudurc/auth/templates
+
+- Assunto: **TechStore | Bem-vindo! Confirme seu e-mail**
+- Corpo: copie **todo o HTML** de Demo-Loja/supabase/confirmation-email.html no repositório.
+- Salve as alterações.
+
+O template usa a variável de OTP Token para fornecer um código temporário. Ao contrário de um link de uso único, esse método não confirma a conta com um simples acesso automatizado à URL do e-mail.
+
+### 3. SMTP para enviar a qualquer visitante
+
+Abra:
+
+https://supabase.com/dashboard/project/akcwdobzjffoaqyudurc/auth/smtp
+
+Para enviar e-mails a qualquer visitante, configure **Custom SMTP** com serviço como Resend, Brevo ou Postmark e remetente verificado. Dependendo do serviço, é necessário ter domínio próprio e configurar SPF/DKIM.
+
+A conexão atual do ChatGPT com o Supabase **não oferece uma ferramenta para editar o SMTP nem o template do Auth**. Essas duas configurações devem ser feitas no painel. **Não compartilhe senhas SMTP, chaves privadas ou códigos de recuperação no chat.**
+
+### 4. Ativar verificações de senha
+
+O Supabase Security Advisor apontou **Leaked Password Protection Disabled**. Habilite a proteção de senhas comprometidas em Authentication > Settings / Password Security quando o recurso estiver disponível no seu plano.
+
+Confira também CAPTCHA e rate limits para evitar cadastros e disparos abusivos de e-mail.
+
+### 5. Teste real obrigatório
+
+1. Abra a TechStore em uma janela anônima.
+2. Faça cadastro com um e-mail de teste novo; não use CPF/endereço real.
+3. Confirme o recebimento da mensagem com o visual TechStore.
+4. Clique em **Confirmar conta TechStore**, insira e-mail e código.
+5. Confira que login funciona.
+6. Vá a Minha Conta > Segurança · 2FA, escaneie QR Code em autenticador e valide o código.
+7. Saia, entre novamente com e-mail/senha e confira que a TechStore exige o código TOTP.
+8. Confira que Meus Pedidos carrega pedidos demonstrativos. Para conta já confirmada, teste login sem reutilizar link antigo.
+
+## Observações de segurança
+
+- 2FA é opcional até ser ativado. Uma vez ativado, a aplicação solicita TOTP nas sessões AAL1.
+- RLS do PostgreSQL usa a presença de fatores verificados e o nível de autenticação (AAL2) para proteger dados pessoais, inclusive via API direta.
+- Nunca envie para o GitHub Pages uma chave service_role ou secret.
+- O procedimento público create_demo_order é um RPC SQL de demonstração, não um pagamento. O Supabase Advisor avisa que ele é SECURITY DEFINER, intencional para este fluxo, mas merece auditoria antes de uso comercial.
+- O painel admin/admin é somente uma simulação local, não um privilégio administrativo real.
+- Nenhum pedido gera cobrança, entrega, rastreamento ou nota fiscal.
