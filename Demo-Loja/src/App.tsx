@@ -55,6 +55,42 @@ function readStorage<T,>(key: string, fallback: T): T {
   }
 }
 
+
+const DEMO_RETENTION_MS=7*24*60*60*1000;
+function purgeExpiredDemoData(){
+  try{
+    const now=Date.now();
+    const startedKey='techstore_demo_storage_started_v2';
+    const started=Number(localStorage.getItem(startedKey))||now;
+    if(now-started>=DEMO_RETENTION_MS){
+      for(const key of [CART_KEY,FAVORITES_KEY,PRODUCTS_KEY,SALES_KEY,'techstore_demo_customer_v2']){
+        localStorage.removeItem(key);
+      }
+      for(let i=localStorage.length-1;i>=0;i--){
+        const key=localStorage.key(i);
+        if(key?.startsWith('techstore_reviews_v1_'))localStorage.removeItem(key);
+      }
+      localStorage.setItem(startedKey,String(now));
+      return;
+    }
+    if(!localStorage.getItem(startedKey))localStorage.setItem(startedKey,String(now));
+    const old=JSON.parse(localStorage.getItem(SALES_KEY)||'[]');
+    if(Array.isArray(old)){
+      const valid=old.filter(x=>Number.isFinite(new Date(x.date).getTime()) && now-new Date(x.date).getTime()<DEMO_RETENTION_MS);
+      if(valid.length!==old.length)localStorage.setItem(SALES_KEY,JSON.stringify(valid));
+    }
+    for(let i=localStorage.length-1;i>=0;i--){
+      const key=localStorage.key(i);
+      if(!key?.startsWith('techstore_reviews_v1_'))continue;
+      const oldReviews=JSON.parse(localStorage.getItem(key)||'[]');
+      if(!Array.isArray(oldReviews)){localStorage.removeItem(key);continue;}
+      const next=oldReviews.filter(x=>Number.isFinite(new Date(x.date).getTime()) && now-new Date(x.date).getTime()<DEMO_RETENTION_MS);
+      if(next.length!==oldReviews.length)localStorage.setItem(key,JSON.stringify(next));
+    }
+  }catch{ /* Browsers may block local storage; the shop remains usable. */ }
+}
+purgeExpiredDemoData();
+
 // TechStore demo storefront with local admin, inventory and sales state.
 export default function App() {
   const [products, setProducts] = useState<Product[]>(() => {
