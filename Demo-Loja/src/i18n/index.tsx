@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Check, ChevronDown, Globe2, Languages } from 'lucide-react';
 import { phrases } from './phrases';
 import { details } from './details';
 import { information } from './information';
@@ -20,6 +19,7 @@ const variants = [
 const dictionary={...phrases,...details,...information,...administration,...catalog,...remaining,...marketing,...pcCatalog,...runtime};
 const indexes:Record<Exclude<Locale,'pt-BR'>,number>={en:0,es:1,fr:2};
 const localeStorageKey='techstore_language_v1';
+const portfolioLanguageKey='agonisingbasher-language';
 const normalizeLocale=(source:string|null):Locale|null=>{
   if(!source)return null;
   const lower=source.toLowerCase();
@@ -32,7 +32,12 @@ const normalizeLocale=(source:string|null):Locale|null=>{
 const initialLocale=():Locale=>{
   try {
     const url=new URL(window.location.href);
-    return normalizeLocale(url.searchParams.get('lang'))||normalizeLocale(localStorage.getItem(localeStorageKey))||'pt-BR';
+    const preferred=typeof navigator==='undefined'?[]:(navigator.languages?.length?navigator.languages:[navigator.language]);
+    return normalizeLocale(url.searchParams.get('lang'))
+      ||normalizeLocale(localStorage.getItem(localeStorageKey))
+      ||normalizeLocale(localStorage.getItem(portfolioLanguageKey))
+      ||preferred.map(normalizeLocale).find((value):value is Locale=>value!==null)
+      ||'pt-BR';
   } catch{return 'pt-BR';}
 };
 const escapeRegExp=(text:string)=>text.replace(/[|\\{}()[\]^$+*?.]/g,'\\$&');
@@ -93,6 +98,7 @@ export function LocaleProvider({children}:{children:ReactNode}){
     setCurrentLocale(next);
     try{
       localStorage.setItem(localeStorageKey,next);
+      localStorage.setItem(portfolioLanguageKey,next);
       const url=new URL(window.location.href);
       url.searchParams.set('lang',next);
       window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);
@@ -116,18 +122,31 @@ export function LocaleProvider({children}:{children:ReactNode}){
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }
 
+// Same always-visible PT / EN / ES / FR language bar used on the author's other websites.
 export function LanguageSwitcher({inline=false}:{inline?:boolean}){
   const {locale,setLocale}=useLocale();
-  const [opened,setOpened]=useState(false);
-  const active=variants.find(x=>x.value===locale)!;
-  return <div data-no-translate className={inline?'relative shrink-0':'fixed bottom-4 left-4 z-[9999]'}>
-    <button type="button" onClick={()=>setOpened(v=>!v)} aria-expanded={opened} aria-label="Select language / Seleccionar idioma / Choisir la langue" title="Language / Idioma / Langue" className={'inline-flex items-center gap-2 rounded-xl border font-bold shadow-lg transition '+(inline?'border-white/20 bg-[#142e59] px-3 py-2 text-xs text-white hover:bg-[#234b87]':'border-orange-200 bg-white px-3 py-3 text-sm text-slate-800 hover:border-orange-400')}>
-      {inline?<Languages size={16}/>:<Globe2 size={19} className="text-orange-600"/>}<span aria-hidden="true">{active.flag}</span><span>{active.short}</span><ChevronDown size={14} className={opened?'rotate-180':''}/>
-    </button>
-    {opened&&<div role="menu" aria-label="Choose language" className={'absolute z-[10000] min-w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 text-slate-900 shadow-2xl '+(inline?'right-0 top-full mt-2':'bottom-full left-0 mb-2')}>
-      {variants.map(item=><button key={item.value} type="button" role="menuitemradio" aria-checked={locale===item.value} onClick={()=>{setLocale(item.value);setOpened(false);}} className={'flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-sm font-semibold hover:bg-orange-50 '+(locale===item.value?'bg-orange-50 text-orange-700':'text-slate-700')}>
-        <span aria-hidden="true">{item.flag}</span><span className="flex-1">{item.label}</span>{locale===item.value&&<Check size={16}/>}
-      </button>)}
-    </div>}
+  return <div
+    id={inline?undefined:'techstore-language-floating'}
+    data-no-translate
+    role="group"
+    aria-label="Idioma / Language / Langue"
+    className={inline
+      ?'inline-flex shrink-0 flex-wrap items-center justify-center gap-1 rounded-lg border border-white/15 bg-white/5 p-1'
+      :'fixed bottom-4 left-4 z-[9999] inline-flex max-w-[calc(100vw-2rem)] items-center justify-center gap-1 rounded-xl border border-orange-200 bg-white/95 p-1.5 shadow-xl backdrop-blur'}
+  >
+    {variants.map(item=><button
+      key={item.value}
+      type="button"
+      lang={item.value}
+      title={item.label}
+      aria-label={item.label}
+      aria-pressed={locale===item.value}
+      onClick={()=>setLocale(item.value)}
+      className={'min-w-9 rounded-md border px-2 py-2 text-xs font-black tracking-wider transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400 '+(locale===item.value
+        ?'border-orange-500 bg-orange-500 text-white shadow-sm'
+        :inline
+          ?'border-white/20 bg-white/5 text-slate-100 hover:border-orange-400 hover:bg-orange-500/20'
+          :'border-slate-200 bg-white text-slate-700 hover:border-orange-400 hover:bg-orange-50')}
+    >{item.short}</button>)}
   </div>;
 }
