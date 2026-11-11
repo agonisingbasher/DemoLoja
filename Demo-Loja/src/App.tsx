@@ -205,13 +205,19 @@ export default function App() {
   const finishDemoOrder = (payload:CheckoutSubmission):string => {
     const sale:DemoSale = {
       id:'TS-'+Date.now().toString().slice(-8),
-      customer:payload.customer, email:payload.email,
+      customer:payload.customer, email:account?.email || payload.email,
+      userId:account?.id,
       date:new Date().toISOString(), total:payload.total,
       status:'Recebido', paymentMethod:payload.paymentMethod,
       couponCode:payload.couponCode, discount:payload.discount, shipping:payload.shipping,
       items:cartProducts.map(({product,quantity})=>({productId:product.id,name:product.name,quantity,unitPrice:product.price})),
     };
-    setSales(current=>[...current,sale]);
+    setSales(current=>{
+      const next=[...current,sale];
+      // Persist immediately so leaving the checkout cannot race the React effect.
+      localStorage.setItem(SALES_KEY,JSON.stringify(next));
+      return next;
+    });
     setProducts(current=>current.map(product=>{
       const line=cartProducts.find(item=>item.product.id===product.id);
       return line?{...product,stock:Math.max(0,product.stock-line.quantity)}:product;
@@ -240,7 +246,7 @@ export default function App() {
   if (checkoutOpen) return <CheckoutPage items={cartProducts} initialCoupon={couponInput} account={account}
     onBack={closeSpecial} onQuantityChange={changeQuantity}
     onRemove={id=>setCart(current=>current.filter(line=>line.productId!==id))}
-    onFinish={finishDemoOrder} onCompleted={closeSpecial}/>;
+    onFinish={finishDemoOrder} onCompleted={closeSpecial} onViewOrders={()=>openAccount('orders')}/>;
   if (couponsPage) return <CouponCenterPage banner={couponBanner} cartCount={itemCount} onBack={closeSpecial}
     onSelect={code=>{setCouponInput(code);if(itemCount)openCheckout();else{closeSpecial();setNotice('Cupom '+code+' selecionado. Adicione produtos e abra o checkout.');}}}
     onInfoClick={openInfo}/>;
