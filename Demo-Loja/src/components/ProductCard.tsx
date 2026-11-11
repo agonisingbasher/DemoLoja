@@ -1,53 +1,30 @@
-import { Eye, ShoppingCart, Star } from 'lucide-react';
+import { Eye, ShoppingCart, Star, Truck } from 'lucide-react';
 import type { Product } from '../lib/supabase';
+import { installments, money } from '../lib/promotions';
 
-interface ProductCardProps {
-  product: Product;
-  onAddToCart: (productId: string) => void;
-  onViewDetails: (productId: string) => void;
-}
-
-export const ProductCard = ({ product, onAddToCart, onViewDetails }: ProductCardProps) => {
-  const discount = product.original_price
-    ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
-    : 0;
-
-  return (
-    <article className="group overflow-hidden rounded-xl bg-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
-      <button type="button" onClick={() => onViewDetails(product.id)} className="relative block w-full overflow-hidden bg-slate-100 text-left" aria-label={`Ver detalhes de ${product.name}`}>
-        {discount > 0 && <span className="absolute left-4 top-4 z-10 rounded-full bg-red-500 px-3 py-1 text-sm font-bold text-white">-{discount}%</span>}
-        {product.stock <= 3 && product.stock > 0 && <span className="absolute bottom-3 left-3 z-10 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">Últimas unidades</span>}
-        <img
-          src={product.image_url || 'https://placehold.co/600x450?text=TechStore'}
-          alt={product.name}
-          loading="lazy"
-          className="h-64 w-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
-          onError={(event) => { event.currentTarget.src = 'https://placehold.co/600x450?text=Imagem+indisponivel'; }}
-        />
-      </button>
-      <div className="space-y-4 p-6">
-        <div className="flex items-center gap-1">
-          {[...Array(5)].map((_, index) => (
-            <Star key={index} size={16} className={index < Math.floor(product.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} />
-          ))}
-          <span className="ml-2 text-sm text-gray-600">({product.rating.toFixed(1)})</span>
-        </div>
-        <button type="button" onClick={() => onViewDetails(product.id)} className="block min-h-[3.5rem] text-left text-lg font-semibold text-gray-800 hover:text-orange-600">{product.name}</button>
-        <p className="line-clamp-2 min-h-[2.5rem] text-sm text-gray-600">{product.description}</p>
-        <div className="space-y-2">
-          {product.original_price && <p className="text-sm text-gray-400 line-through">R$ {product.original_price.toFixed(2).replace('.', ',')}</p>}
-          <p className="text-3xl font-bold text-orange-600">R$ {product.price.toFixed(2).replace('.', ',')}</p>
-          <p className={`text-sm font-medium ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {product.stock > 0 ? `Em estoque: ${product.stock} unidades` : 'Produto esgotado'}
-          </p>
-        </div>
-        <div className="grid grid-cols-[1fr_auto] gap-2">
-          <button type="button" disabled={product.stock <= 0} onClick={() => onAddToCart(product.id)} className="flex items-center justify-center gap-2 rounded-lg bg-orange-600 py-3 font-semibold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-gray-300">
-            <ShoppingCart size={19} /><span>{product.stock > 0 ? 'Adicionar' : 'Indisponível'}</span>
-          </button>
-          <button type="button" onClick={() => onViewDetails(product.id)} aria-label="Ver detalhes" className="flex items-center justify-center rounded-lg border border-slate-200 px-4 text-slate-700 transition hover:border-orange-400 hover:text-orange-600"><Eye size={20} /></button>
+type Props={product:Product;onAddToCart:(id:string)=>void;onViewDetails:(id:string)=>void};
+export const ProductCard=({product,onAddToCart,onViewDetails}:Props)=>{
+  const discount=product.original_price?Math.max(0,Math.round(100*(1-product.price/product.original_price))):0;
+  return <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-xl">
+    <button onClick={()=>onViewDetails(product.id)} className="relative block w-full overflow-hidden bg-gradient-to-b from-white to-slate-50 text-left" aria-label={'Ver detalhes de '+product.name}>
+      {discount>0&&<span className="absolute left-3 top-3 z-10 rounded-lg bg-rose-600 px-3 py-1 text-xs font-black text-white">-{discount}% OFF</span>}
+      <img src={product.image_url} loading="lazy" alt={product.name} className="h-52 w-full object-contain p-3 transition-transform duration-500 group-hover:scale-105 sm:h-56" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src=import.meta.env.BASE_URL+'images/monitor.svg';}}/>
+    </button>
+    <div className="flex flex-1 flex-col p-4">
+      <div className="mb-2 flex items-center gap-2 text-xs text-slate-500"><Star size={14} className="fill-amber-400 text-amber-400"/><strong className="text-slate-800">{product.rating.toFixed(1)}</strong><span>· Avaliação ilustrativa</span></div>
+      <button onClick={()=>onViewDetails(product.id)} className="min-h-12 text-left text-base font-black leading-snug text-slate-800 hover:text-orange-600">{product.name}</button>
+      <p className="mt-2 line-clamp-2 min-h-10 text-xs leading-5 text-slate-500">{product.description}</p>
+      <div className="mt-auto pt-4">
+        {product.original_price&&<p className="text-xs text-slate-400 line-through">{money(product.original_price)}</p>}
+        <p className="mt-1 text-2xl font-black tracking-tight text-orange-600">{money(product.price)}</p>
+        <p className="mt-1 text-xs font-semibold text-emerald-700">No Pix demo: {money(product.price*.95)}</p>
+        <p className="mt-1 text-xs text-slate-500">ou 10x de {installments(product.price)} sem juros*</p>
+        <div className="mt-3 flex items-center gap-1 text-xs font-semibold text-slate-500"><Truck size={15}/> Frete simulado no checkout</div>
+        <div className="mt-4 flex gap-2">
+          <button disabled={product.stock<=0} onClick={()=>onAddToCart(product.id)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-orange-600 px-2 py-3 text-sm font-bold text-white hover:bg-orange-700 disabled:bg-slate-300"><ShoppingCart size={16}/>{product.stock>0?'Adicionar':'Esgotado'}</button>
+          <button onClick={()=>onViewDetails(product.id)} aria-label={'Ver '+product.name} className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:border-orange-300 hover:text-orange-600"><Eye size={19}/></button>
         </div>
       </div>
-    </article>
-  );
+    </div>
+  </article>;
 };
