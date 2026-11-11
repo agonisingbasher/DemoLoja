@@ -254,6 +254,45 @@ export default function App() {
         favoritesCount={favorites.length}
       />
       <Hero />
+
+      <section className="border-b bg-white py-7">
+        <div className="mx-auto grid max-w-7xl gap-3 px-4 sm:grid-cols-3">
+          <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-4"><Truck className="shrink-0 text-orange-600" size={26}/><div><p className="text-sm font-black">Frete demonstrativo</p><p className="text-xs text-slate-500">Simule o prazo e valor por CEP</p></div></div>
+          <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-4"><BadgePercent className="shrink-0 text-orange-600" size={26}/><div><p className="text-sm font-black">Cupons exclusivos</p><p className="text-xs text-slate-500">Use descontos de demonstração</p></div></div>
+          <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-4"><Cpu className="shrink-0 text-orange-600" size={26}/><div><p className="text-sm font-black">Monte seu PC</p><p className="text-xs text-slate-500">Escolha peças e compare totais</p></div></div>
+        </div>
+      </section>
+      <section id="ofertas" className="mx-auto max-w-7xl px-4 py-12">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3"><div><p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-orange-600"><Zap size={16}/> Seleção com desconto</p><h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900">Produtos em oferta <span className="text-orange-600">🔥</span></h2><p className="mt-2 text-sm text-slate-500">Valores e descontos ilustrativos para testar a loja.</p></div><a href="#catalogo" className="text-sm font-bold text-orange-700 hover:underline">Ver todo o catálogo →</a></div>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {offers.map(product=><div key={product.id} className="relative"><button onClick={()=>toggleFavorite(product.id)} aria-label={favorites.includes(product.id)?'Remover favorito':'Adicionar favorito'} className="absolute right-3 top-3 z-20 rounded-full bg-white p-2 text-rose-500 shadow-md"><Heart size={18} className={favorites.includes(product.id)?'fill-current':''}/></button><ProductCard product={product} onAddToCart={addToCart} onViewDetails={id=>setSelectedProductId(id)}/></div>)}
+        </div>
+      </section>
+      <section className="mx-auto max-w-7xl px-4 pb-12">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-orange-950 text-white shadow-2xl">
+          <div className="absolute -right-24 -top-28 h-80 w-80 rounded-full bg-orange-600/25 blur-3xl"/>
+          <div className="relative grid items-center gap-6 p-7 md:grid-cols-[1.3fr_1fr] md:p-12">
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full border border-orange-400/30 bg-orange-500/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-orange-200"><Sparkles size={16}/> Especial Nintendo · TechStore Demo</span>
+              <h2 className="mt-5 max-w-2xl text-3xl font-black leading-tight tracking-tight sm:text-5xl">Uma nova geração.<br/><span className="text-orange-400">A nostalgia continua.</span></h2>
+              <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300">Explore o Nintendo Switch 2, controles e acessórios em promoção ilustrativa — e conheça também nosso projeto independente de Ocarina of Time para Nintendo DSi.</p>
+              <div className="mt-6 flex flex-wrap gap-3"><button onClick={()=>{setSearch('Switch 2');setCategory(null);document.getElementById('catalogo')?.scrollIntoView({behavior:'smooth'});}} className="rounded-xl bg-orange-600 px-6 py-3 font-bold text-white hover:bg-orange-700">Ver ofertas Switch 2 →</button><a href="https://agonisingbasher.github.io/ocarina-of-time-dsi/" target="_blank" rel="noopener noreferrer" className="rounded-xl border border-white/30 px-6 py-3 font-bold text-white hover:bg-white/10">Projeto Ocarina of Time ↗</a></div>
+              <p className="mt-4 text-xs text-slate-400">Campanha conceitual, sem parceria oficial com Nintendo ou ofertas comerciais reais.</p>
+            </div>
+            <div className="relative flex min-h-[260px] items-center justify-center">
+              <div className="absolute h-64 w-64 rounded-full bg-orange-500/30 blur-3xl"/>
+              <img src={import.meta.env.BASE_URL+'images/switch2.svg'} alt="Ilustração conceitual de console portátil estilo Switch 2" className="relative max-h-[285px] w-full max-w-[440px] rotate-[-6deg] rounded-2xl object-contain shadow-2xl"/>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="recomendados" className="mx-auto max-w-7xl px-4 pb-12">
+        <div className="mb-6"><p className="text-xs font-black uppercase tracking-widest text-orange-600">Inspiração para seu setup</p><h2 className="mt-2 text-3xl font-black">Recomendados para você</h2><p className="mt-2 text-sm text-slate-500">{favorites.length?'Priorizamos categorias que você favoritou neste navegador.':'Uma seleção de produtos em destaque para explorar.'}</p></div>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{recommendations.map(product=><div key={product.id} className="relative"><button onClick={()=>toggleFavorite(product.id)} aria-label="Favoritar produto" className="absolute right-3 top-3 z-20 rounded-full bg-white p-2 text-rose-500 shadow-md"><Heart size={18} className={favorites.includes(product.id)?'fill-current':''}/></button><ProductCard product={product} onAddToCart={addToCart} onViewDetails={id=>setSelectedProductId(id)}/></div>)}</div>
+      </section>
+      <section className="mx-auto max-w-7xl px-4 pb-10">
+        <div className="flex flex-wrap items-center justify-between gap-5 overflow-hidden rounded-3xl bg-slate-900 p-7 text-white md:p-10"><div className="flex items-center gap-5"><span className="grid h-20 w-20 shrink-0 place-items-center rounded-2xl bg-orange-500/20 text-orange-300"><Cpu size={42}/></span><div><p className="text-xs font-extrabold uppercase tracking-widest text-orange-400">TechStore PC Builder</p><h2 className="mt-1 text-2xl font-black">Seu PC, peça por peça</h2><p className="mt-2 max-w-xl text-sm text-slate-400">Simule configurações AMD ou Intel, compare preços, verifique socket e memória, e monte um carrinho completo.</p></div></div><button onClick={()=>setBuilderOpen(true)} className="shrink-0 rounded-xl bg-orange-600 px-6 py-4 font-black text-white hover:bg-orange-700">Começar montagem →</button></div>
+      </section>
       <main id="catalogo" className="container mx-auto px-4 py-12">
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
@@ -267,6 +306,13 @@ export default function App() {
           </button>
         </div>
 
+
+        <div className="mb-8 flex flex-wrap gap-2" role="group" aria-label="Filtrar por categoria">
+          {([{id:'',name:'Tudo'},...categories]).map(item=>{
+            const Icon=item.id?categoryIcons[item.id]:Sparkles;
+            return <button key={item.id} onClick={()=>setCategory(item.id||null)} aria-pressed={(category||'')===item.id} className={'flex items-center gap-2 rounded-full border px-4 py-3 text-sm font-bold transition '+((category||'')===item.id?'border-orange-600 bg-orange-600 text-white':'border-slate-200 bg-white text-slate-700 hover:border-orange-300 hover:text-orange-700')}><Icon size={17}/>{item.name}</button>;
+          })}
+        </div>
         <div className="grid gap-8 lg:grid-cols-[230px_minmax(0,1fr)]">
           <aside className="space-y-5">
             <CategoryFilter categories={categories} selectedCategory={category} onSelectCategory={setCategory} />
@@ -291,6 +337,7 @@ export default function App() {
               </label>
             </div>
             {filteredProducts.length ? (
+              <>
               <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {pagedProducts.map((product) => (
                   <div key={product.id} className="relative">
@@ -306,6 +353,13 @@ export default function App() {
                   </div>
                 ))}
               </div>
+              <nav aria-label="Paginação do catálogo" className="mt-8 flex flex-wrap items-center justify-center gap-2">
+                <button disabled={page===1} onClick={()=>{setPage(p=>Math.max(1,p-1));document.getElementById('catalogo')?.scrollIntoView();}} className="rounded-xl border bg-white px-4 py-2 text-sm font-bold disabled:opacity-40">← Anterior</button>
+                {Array.from({length:pages},(_,i)=>i+1).map(n=><button key={n} onClick={()=>{setPage(n);document.getElementById('catalogo')?.scrollIntoView();}} aria-current={page===n?'page':undefined} className={'grid h-10 w-10 place-items-center rounded-xl border text-sm font-black '+(page===n?'border-orange-600 bg-orange-600 text-white':'bg-white text-slate-700 hover:border-orange-300')}>{n}</button>)}
+                <button disabled={page===pages} onClick={()=>{setPage(p=>Math.min(pages,p+1));document.getElementById('catalogo')?.scrollIntoView();}} className="rounded-xl border bg-white px-4 py-2 text-sm font-bold disabled:opacity-40">Próxima →</button>
+              </nav>
+              <p className="mt-3 text-center text-xs text-slate-500">Página {page} de {pages} · {filteredProducts.length} produtos</p>
+              </>
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
                 <Search size={36} className="mx-auto mb-4 text-slate-300" />
@@ -328,6 +382,12 @@ export default function App() {
           <a href="#catalogo" className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-3 font-bold text-white transition hover:bg-orange-600">Explorar produtos <ArrowRight size={18} /></a>
         </div>
       </section>
+      <div className="border-t border-orange-100 bg-orange-50 py-6">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4">
+          <div><p className="text-sm font-black text-slate-900">Fique por dentro da TechStore</p><p className="mt-1 text-xs text-slate-500">Cupons e avisos demonstrativos para explorar o projeto</p></div>
+          <div className="flex flex-wrap gap-2"><button onClick={()=>setNotificationsOpen(true)} className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm hover:text-orange-700"><Bell size={17}/> Notificações</button><button onClick={()=>setCouponsOpen(true)} className="flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-3 text-sm font-bold text-white hover:bg-orange-700"><Gift size={17}/> Ver cupons</button></div>
+        </div>
+      </div>
       <Footer onInfoClick={openInfo} />
 
 
