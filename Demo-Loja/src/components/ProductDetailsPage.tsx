@@ -62,7 +62,7 @@ export function ProductDetailsPage({product,products,favorite,onToggleFavorite,o
               {discount>0&&<span className="absolute left-5 top-5 rounded-full bg-red-600 px-3 py-1.5 text-xs font-black text-white">-{discount}% OFF</span>}
               <img src={product.image_url} alt={product.name} className="max-h-[440px] w-full object-contain" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src=import.meta.env.BASE_URL+'images/monitor.svg';}}/>
             </div>
-            <div className="mt-3 flex gap-3">{[0,1,2].map(i=><div key={i} className="grid h-20 w-24 place-items-center rounded-xl border border-orange-200 bg-white p-2"><img src={product.image_url} alt="" className="h-full w-full object-contain"/></div>)}</div>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-500"><span>Imagem demonstrativa do produto. A aparência exata pode variar conforme o modelo.</span><span className="font-bold text-orange-700">Veja informações técnicas ao lado →</span></div>
           </section>
           <section className="min-w-0">
             <div className="mb-3 flex flex-wrap items-center gap-2"><span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-orange-700">TechStore Selection</span><span className="text-xs font-semibold text-slate-400">Cód: {product.id}</span></div>
