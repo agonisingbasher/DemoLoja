@@ -8,8 +8,8 @@ export function EmailConfirmationPage({onBack,onSuccess}:Props){
   const [email,setEmail]=useState(()=>{try{return sessionStorage.getItem('techstore_confirmation_email')||'';}catch{return '';}});
   const [code,setCode]=useState('');
   const [busy,setBusy]=useState(false);
-  const [notice,setNotice]=useState('');
-  const [failed,setFailed]=useState(false);
+  const [notice,setNotice]=useState(()=>{try{const issue=sessionStorage.getItem('techstore_confirmation_error')||'';sessionStorage.removeItem('techstore_confirmation_error');return issue;}catch{return '';}});
+  const [failed,setFailed]=useState(()=>Boolean(notice));
   const [success,setSuccess]=useState(false);
   const confirm=async(event:FormEvent<HTMLFormElement>)=>{
     event.preventDefault();setNotice('');setFailed(false);
