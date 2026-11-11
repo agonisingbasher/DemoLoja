@@ -133,8 +133,8 @@ export function LanguageSwitcher({inline=false}:{inline?:boolean}){
     role="group"
     aria-label="Idioma / Language / Langue"
     className={inline
-      ?'inline-flex shrink-0 flex-wrap items-center justify-center gap-1 rounded-lg border border-white/15 bg-white/5 p-1'
-      :'fixed bottom-4 left-4 z-[9999] inline-flex max-w-[calc(100vw-2rem)] items-center justify-center gap-1 rounded-xl border border-orange-200 bg-white/95 p-1.5 shadow-xl backdrop-blur'}
+      ?'grid w-44 shrink-0 grid-cols-4 items-center gap-1 rounded-lg border border-white/15 bg-white/5 p-1'
+      :'fixed bottom-4 left-4 z-[9999] grid w-44 max-w-[calc(100vw-2rem)] grid-cols-4 items-center gap-1 rounded-xl border border-orange-200 bg-white/95 p-1.5 shadow-xl backdrop-blur'}
   >
     {variants.map(item=><button
       key={item.value}
@@ -144,7 +144,7 @@ export function LanguageSwitcher({inline=false}:{inline?:boolean}){
       aria-label={item.label}
       aria-pressed={locale===item.value}
       onClick={()=>setLocale(item.value)}
-      className={'min-w-9 rounded-md border px-2 py-2 text-xs font-black tracking-wider transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400 '+(locale===item.value
+      className={'block w-full min-w-0 rounded-md border px-1 py-2 text-center text-xs font-black tracking-wider transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400 '+(locale===item.value
         ?'border-orange-500 bg-orange-500 text-white shadow-sm'
         :inline
           ?'border-white/20 bg-white/5 text-slate-100 hover:border-orange-400 hover:bg-orange-500/20'
