@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { ArrowLeft, ArrowRight, BadgeCheck, Check, CheckCircle2, ChevronRight, CreditCard, Gift, LockKeyhole, MapPin, Minus, Package, Plus, Printer, ShieldCheck, ShoppingCart, Tag, Trash2, Truck, Wallet } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BadgeCheck, Check, CheckCircle2, CreditCard, Gift, LockKeyhole, MapPin, Minus, Package, Plus, Printer, ShieldCheck, ShoppingCart, Trash2, Truck, Wallet } from 'lucide-react';
 import type { Product } from '../lib/supabase';
 import type { AccountProfile, DeliveryAddress } from '../lib/customerAccount';
 import { calculateCoupon, coupons, money } from '../lib/promotions';
