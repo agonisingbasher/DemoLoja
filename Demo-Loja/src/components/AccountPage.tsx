@@ -17,7 +17,7 @@ const cepMask=(s:string)=>digits(s).slice(0,8).replace(/^(\d{5})(\d)/,'$1-$2');
 type AuthTab='login'|'register';
 type ProfileTab='profile'|'address'|'orders'|'security';
 export function AccountPage({account,orders,initialTab='profile',onBack,onChange,onInfoClick}:Props){
-  const [authTab,setAuthTab]=useState<AuthTab>('register');
+  const [authTab,setAuthTab]=useState<AuthTab>('login');
   const [profileTab,setProfileTab]=useState<ProfileTab>(initialTab);
   const [name,setName]=useState(account?.name||'');
   const [email,setEmail]=useState(account?.email||'');
