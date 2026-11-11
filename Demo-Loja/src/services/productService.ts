@@ -1,7 +1,12 @@
 import { supabase, Product, Category } from '../lib/supabase';
+const requireClient=()=>{
+  if (!supabase) throw new Error('Backend Supabase não configurado para este serviço.');
+  return supabase;
+};
+
 
 export const getCategories = async (): Promise<Category[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await requireClient()
     .from('categories')
     .select('*')
     .order('name');
@@ -15,7 +20,7 @@ export const getCategories = async (): Promise<Category[]> => {
 };
 
 export const getProducts = async (): Promise<Product[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await requireClient()
     .from('products')
     .select('*')
     .order('created_at', { ascending: false });
@@ -29,7 +34,7 @@ export const getProducts = async (): Promise<Product[]> => {
 };
 
 export const getFeaturedProducts = async (): Promise<Product[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await requireClient()
     .from('products')
     .select('*')
     .eq('featured', true)
@@ -44,7 +49,7 @@ export const getFeaturedProducts = async (): Promise<Product[]> => {
 };
 
 export const getProductsByCategory = async (categoryId: string): Promise<Product[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await requireClient()
     .from('products')
     .select('*')
     .eq('category_id', categoryId)
