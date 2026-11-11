@@ -38,6 +38,7 @@ export function ProductDetailsPage({product,products,orders,account,favorite,onT
     setShipping(false);setCep('');window.scrollTo(0,0);
     let mounted=true;
     const load=async()=>{
+      if(account?.demo){if(mounted)setReviews(getReviews(product.id));return;}
       if(supabase){
         const {data,error}=await supabase.from('store_reviews')
           .select('id,user_id,nickname,rating,title,comment,created_at')
@@ -54,7 +55,7 @@ export function ProductDetailsPage({product,products,orders,account,favorite,onT
     };
     void load();
     return ()=>{mounted=false;};
-  },[product.id]);
+  },[product.id,account?.demo]);
   const recommendations=products.filter(p=>p.id!==product.id && p.stock>0).sort((a,b)=>Number(b.category_id===product.category_id)-Number(a.category_id===product.category_id) || b.rating-a.rating).slice(0,4);
   const discount=product.original_price?Math.round((1-product.price/product.original_price)*100):0;
   const reviewList=[...reviews,...demoExamples];
