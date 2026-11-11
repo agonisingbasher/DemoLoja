@@ -1,4 +1,4 @@
-import { ArrowUpRight, Facebook, Instagram, Mail, MapPin, Phone, ShieldCheck, Truck, CreditCard, Headphones, Youtube } from 'lucide-react';
+import { ArrowUpRight, Github, Instagram, Mail, MapPin, Phone, ShieldCheck, Truck, CreditCard, Headphones, Youtube } from 'lucide-react';
 
 interface FooterProps {
   onInfoClick: (topic: string) => void;
@@ -28,10 +28,11 @@ export const Footer = ({ onInfoClick }: FooterProps) => {
             <span className="text-2xl font-black tracking-tight">Tech<span className="text-orange-400">Store</span></span>
           </button>
           <p className="mt-5 max-w-sm text-sm leading-7 text-slate-400">Tecnologia, games e acessórios para inspirar seu próximo setup. Explore uma experiência de e-commerce criada para demonstração.</p>
+          <a href="https://agonisingbasher.github.io/personal-website/?lang=pt-BR" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-orange-300 hover:text-orange-200" target="_blank" rel="noopener noreferrer">← Voltar ao meu portfólio <ArrowUpRight size={14}/></a>
           <div className="mt-6 flex gap-2">
-            <button type="button" aria-label="Facebook" onClick={() => onInfoClick('Redes sociais')} className={socialClass}><Facebook size={18}/></button>
-            <button type="button" aria-label="Instagram" onClick={() => onInfoClick('Redes sociais')} className={socialClass}><Instagram size={18}/></button>
-            <button type="button" aria-label="YouTube" onClick={() => onInfoClick('Redes sociais')} className={socialClass}><Youtube size={18}/></button>
+            <a aria-label="GitHub AgonisingBasher (nova aba)" href="https://github.com/agonisingbasher" target="_blank" rel="noopener noreferrer" className={socialClass}><Github size={18}/></a>
+            <a aria-label="Instagram Felipe Alexandre (nova aba)" href="https://www.instagram.com/felipealexandre10/" target="_blank" rel="noopener noreferrer" className={socialClass}><Instagram size={18}/></a>
+            <a aria-label="YouTube AgonisingBasher (nova aba)" href="https://www.youtube.com/@AgonisingBasher" target="_blank" rel="noopener noreferrer" className={socialClass}><Youtube size={18}/></a>
           </div>
         </div>
 
