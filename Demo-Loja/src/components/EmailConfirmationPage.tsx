@@ -58,6 +58,7 @@ export function EmailConfirmationPage({onBack,onSuccess}:Props){
           </form>
           <button disabled={busy||!email.trim()} onClick={()=>{void resend();}} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-[#0d3479] hover:bg-blue-50 disabled:opacity-50"><RefreshCw size={17}/> Reenviar código de confirmação</button>
           {notice&&<p role="status" className={'mt-5 rounded-xl p-4 text-sm leading-6 '+(failed?'bg-rose-50 text-rose-800':'bg-emerald-50 text-emerald-800')}>{notice}</p>}
+          <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-4"><p className="text-sm font-bold text-[#0c285a]">Já confirmou seu cadastro antes?</p><p className="mt-2 text-xs leading-6 text-slate-600">Se sua conta já estiver confirmada, o Supabase pode aceitar o pedido de reenvio sem mandar um novo e-mail. Nesse caso, entre com sua senha em Minha Conta.</p><button type="button" onClick={onSuccess} className="mt-3 rounded-lg bg-[#0c285a] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#17417b]">Ir para Minha Conta e entrar</button></div>
           <p className="mt-5 text-xs leading-6 text-slate-400">O código é pessoal e temporário. Nunca compartilhe seu código nem senha com ninguém.</p>
         </>}
       </section>
