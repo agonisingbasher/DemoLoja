@@ -119,7 +119,7 @@ export default function App() {
   const [couponsPage, setCouponsPage] = useState(() => window.location.hash === '#/cupons');
   const [accountPage, setAccountPage] = useState(() => window.location.hash === '#/minha-conta');
   const [accountTab, setAccountTab] = useState<'profile'|'address'|'orders'>('profile');
-  const [account, setAccount] = useState<AccountProfile|null>(() => supabase ? null : loadDemoAccount());
+  const [account, setAccount] = useState<AccountProfile|null>(() => loadDemoAccount());
   const [couponBanner, setCouponBanner] = useState<CouponBanner>(() => readStorage(couponBannerKey, defaultCouponBanner));
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [builderOpen, setBuilderOpen] = useState(false);
@@ -138,15 +138,15 @@ export default function App() {
   useEffect(() => { localStorage.setItem(couponBannerKey, JSON.stringify(couponBanner)); }, [couponBanner]);
   useEffect(() => {
     if (!supabase) return;
-    supabase.auth.getUser().then(({data})=>setAccount(data.user?profileFromUser(data.user):null)).catch(()=>setAccount(null));
+    supabase.auth.getUser().then(({data})=>setAccount(data.user?profileFromUser(data.user):current=>current?.demo?current:null)).catch(()=>{});
     const {data:{subscription}} = supabase.auth.onAuthStateChange((_event, session)=>{
-      setAccount(session?.user?profileFromUser(session.user):null);
+      setAccount(current=>session?.user?profileFromUser(session.user):current?.demo?current:null);
     });
     return ()=>subscription.unsubscribe();
   }, []);
   const updateAccount=(profile:AccountProfile|null)=>{
     setAccount(profile);
-    if(!supabase)saveDemoAccount(profile);
+    if(profile?.demo || !profile)saveDemoAccount(profile);
   };
   useEffect(() => {
     const onHashChange = () => {
