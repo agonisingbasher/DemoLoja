@@ -44,7 +44,7 @@ export function PCBuilder({ products, onClose, onAddBuild }: Props) {
   const next=()=>setStep(n=>Math.min(stages.length,n+1));
   const previous=()=>setStep(n=>Math.max(0,n-1));
   const atEnd=step===stages.length;
-  return <div className="fixed inset-0 z-[125] overflow-y-auto bg-slate-100 text-slate-900">
+  return <div data-techstore-overlay className="fixed inset-0 z-[125] overflow-y-auto bg-slate-100 text-slate-900">
     <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950 text-white shadow-lg">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4">
         <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-orange-600"><Cpu size={24}/></span><div><p className="text-xs font-bold uppercase tracking-widest text-orange-300">TechStore Lab · Simulador</p><h1 className="text-xl font-black">Monte seu PC</h1></div></div>
