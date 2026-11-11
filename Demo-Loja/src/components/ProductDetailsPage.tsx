@@ -1,13 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { ArrowLeft, BadgePercent, ChevronRight, Clock3, CreditCard, Heart, MapPin, PackageCheck, ShieldCheck, ShoppingCart, Star, Truck } from 'lucide-react';
+import { ArrowLeft, BadgePercent, CheckCircle2, ChevronRight, Clock3, CreditCard, Heart, MapPin, PackageCheck, ShieldCheck, ShoppingCart, Star, Truck } from 'lucide-react';
 import type { Product } from '../lib/supabase';
 import { Footer } from './Footer';
 import { ProductCard } from './ProductCard';
 import { installments, money } from '../lib/promotions';
+import type { DemoSale } from './AdminPanel';
+import type { AccountProfile } from '../lib/customerAccount';
 
-export type LocalReview = { id: string; name: string; score: number; title: string; comment: string; date: string };
+export type LocalReview = { id: string; name: string; score: number; title: string; comment: string; date: string; accountId?:string; orderId?:string };
 type Props = {
-  product: Product; products: Product[];
+  product: Product; products: Product[]; orders:DemoSale[]; account:AccountProfile|null;
   favorite: boolean; onToggleFavorite: (id:string)=>void; onBack:()=>void;
   onAddToCart:(id:string)=>void; onViewProduct:(id:string)=>void; onOpenCart:()=>void;
   onInfoClick:(topic:string)=>void;
@@ -15,14 +17,14 @@ type Props = {
 function getReviews(productId:string):LocalReview[] {
   try {
     const v=JSON.parse(localStorage.getItem('techstore_reviews_v1_'+productId)||'[]');
-    return Array.isArray(v)?v.filter((item:LocalReview)=>item.name&&item.comment):[];
+    return Array.isArray(v)?v.filter((item:LocalReview)=>item.name&&item.comment && Number.isFinite(new Date(item.date).getTime()) && Date.now()-new Date(item.date).getTime()<7*86400000):[];
   }catch{return [];}
 }
 const demoExamples:LocalReview[] = [
   {id:'sample-a',name:'Cliente exemplo • Camila',score:5,title:'Uma boa experiência de navegação',comment:'Avaliação fictícia para demonstrar como opiniões de compradores apareceriam nesta loja.',date:'2026-10-15'},
   {id:'sample-b',name:'Cliente exemplo • Rafael',score:4,title:'Gostei dos detalhes do produto',comment:'Comentário ilustrativo. Em uma operação real, esta seção teria avaliações verificadas.',date:'2026-10-04'}
 ];
-export function ProductDetailsPage({product,products,favorite,onToggleFavorite,onBack,onAddToCart,onViewProduct,onOpenCart,onInfoClick}:Props) {
+export function ProductDetailsPage({product,products,orders,account,favorite,onToggleFavorite,onBack,onAddToCart,onViewProduct,onOpenCart,onInfoClick}:Props) {
   const [cep,setCep]=useState('');
   const [shipping,setShipping]=useState(false);
   const [reviews,setReviews]=useState<LocalReview[]>(()=>getReviews(product.id));
@@ -31,18 +33,30 @@ export function ProductDetailsPage({product,products,favorite,onToggleFavorite,o
   const [message,setMessage]=useState('');
   const [score,setScore]=useState(5);
   const [showAllReviews,setShowAllReviews]=useState(false);
+  const [infoTab,setInfoTab]=useState<'description'|'specs'>('description');
+  const [reviewError,setReviewError]=useState('');
   useEffect(()=>{setReviews(getReviews(product.id));setShipping(false);setCep('');window.scrollTo(0,0);},[product.id]);
   const recommendations=products.filter(p=>p.id!==product.id && p.stock>0).sort((a,b)=>Number(b.category_id===product.category_id)-Number(a.category_id===product.category_id) || b.rating-a.rating).slice(0,4);
   const discount=product.original_price?Math.round((1-product.price/product.original_price)*100):0;
   const reviewList=[...reviews,...demoExamples];
+  const eligibleOrder=account?orders.find(order=>(order.userId===account.id || (!order.userId && order.email.trim().toLowerCase()===account.email.trim().toLowerCase())) && order.status!=='Cancelado' && order.items.some(item=>item.productId===product.id) && Date.now()-new Date(order.date).getTime()<7*86400000):undefined;
+  const alreadyReviewed=Boolean(account && reviews.some(r=>r.accountId===account.id || (!r.accountId && r.orderId===eligibleOrder?.id)));
+  const canReview=Boolean(account && eligibleOrder && !alreadyReviewed);
+  const summaries=[
+    {title:'Visão geral',detail:product.description},
+    {title:'Especificações técnicas',detail:(product.features||[]).slice(0,2).join(' · ')||'Consulte a descrição e as especificações cadastradas para este item.'},
+    {title:'Compatibilidade',detail:(product.features||[]).find(f=>/compat|socket|ddr|interface|conex|plataforma|sistema|usb|pcie|suporte/i.test(f))||'Verifique modelo, conexões e requisitos de compatibilidade antes de escolher.'},
+    {title:'Recursos e desempenho',detail:(product.features||[]).slice(2,4).join(' · ')||'Os recursos variam conforme a configuração e o fabricante.'}
+  ];
   const avg=reviewList.reduce((n,r)=>n+r.score,0)/reviewList.length;
   const submitReview=(event:FormEvent<HTMLFormElement>)=>{
     event.preventDefault();
+    if(!canReview || !account || !eligibleOrder){setReviewError('Só é possível avaliar um produto após concluir um pedido demonstrativo desse item nesta conta, e apenas uma vez.');return;}
     if(!name.trim()||!message.trim())return;
-    const review={id:'review-'+Date.now(),name:name.trim().slice(0,32),score,title:headline.trim().slice(0,80)||'Minha avaliação',comment:message.trim().slice(0,1000),date:new Date().toISOString()};
+    const review={id:'review-'+Date.now(),name:name.trim().slice(0,32),score,title:headline.trim().slice(0,80)||'Minha avaliação',comment:message.trim().slice(0,1000),date:new Date().toISOString(),accountId:account.id,orderId:eligibleOrder.id};
     const next=[review,...reviews];
     setReviews(next);localStorage.setItem('techstore_reviews_v1_'+product.id,JSON.stringify(next));
-    setName('');setHeadline('');setMessage('');setScore(5);setShowAllReviews(true);
+    setName('');setHeadline('');setMessage('');setScore(5);setShowAllReviews(true);setReviewError('');
   };
   return <div className="min-h-screen bg-slate-50 text-slate-900">
     <div className="border-b bg-slate-950 px-4 py-2 text-center text-xs font-medium text-white">TechStore • Loja demonstrativa · Preços e fretes ilustrativos · Nenhuma cobrança real</div>
@@ -69,13 +83,13 @@ export function ProductDetailsPage({product,products,favorite,onToggleFavorite,o
             <h1 className="text-3xl font-black leading-tight tracking-tight sm:text-4xl">{product.name}</h1>
             <p className="mt-3 text-base leading-7 text-slate-600">{product.description}</p>
             <div className="mt-4 flex flex-wrap items-center gap-2 text-sm"><div className="flex text-amber-500">{Array.from({length:5},(_,i)=><Star key={i} size={17} className={i<Math.round(avg)?'fill-current':''}/>)}</div><strong>{avg.toFixed(1)}</strong><a href="#avaliacoes" className="text-orange-600 hover:underline">{reviewList.length} avaliações demonstrativas</a><button onClick={()=>onToggleFavorite(product.id)} className="ml-auto flex items-center gap-1 font-bold text-slate-500 hover:text-rose-600"><Heart size={18} className={favorite?'fill-rose-500 text-rose-500':''}/> {favorite?'Salvo':'Favoritar'}</button></div>
-            <div className="mt-7 rounded-2xl border bg-white p-5 shadow-sm">
-              <p className="text-xs font-extrabold uppercase tracking-widest text-orange-600">Ficha técnica</p>
-              <h2 className="mt-2 text-lg font-black">Especificações e recursos</h2>
-              <p className="mt-2 text-sm leading-7 text-slate-600">{product.details||product.description}</p>
-              <dl className="mt-4 divide-y divide-slate-100">{[['Marca/modelo',product.name],['Categoria',product.category_id],['Referência',product.id],...(product.features||[]).map((f,i)=>['Característica '+String(i+1),f])].map(([key,value])=><div key={key} className="grid grid-cols-[125px_1fr] gap-3 py-3 text-sm sm:grid-cols-[145px_1fr]"><dt className="font-semibold text-slate-500">{key}</dt><dd className="font-medium text-slate-800">{value}</dd></div>)}</dl>
-              <p className="mt-3 text-xs text-slate-400">Ficha ilustrativa de demonstração. Confirme especificações exatas com o fabricante.</p>
-            </div>
+
+            <section className="mt-7 rounded-2xl border bg-white p-5 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-black text-slate-900">Sobre o produto</h2><span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">Resumo elaborado com IA a partir do catálogo</span></div>
+              <ul className="mt-5 space-y-4">{summaries.map(item=><li key={item.title} className="flex gap-3 text-sm leading-7 text-slate-700"><CheckCircle2 size={19} className="mt-1 shrink-0 text-emerald-600"/><div><strong className="text-slate-900">{item.title}:</strong> {item.detail}</div></li>)}</ul>
+              <p className="mt-4 text-xs leading-5 text-slate-400">Resumo informativo baseado nas características cadastradas. Consulte os dados oficiais do fabricante antes de uma compra real.</p>
+              <div className="mt-4 flex flex-wrap gap-3"><button onClick={()=>{setInfoTab('description');document.getElementById('produto-informacoes')?.scrollIntoView({behavior:'smooth'});}} className="text-sm font-black text-orange-700 hover:underline">Ver descrição ↓</button><button onClick={()=>{setInfoTab('specs');document.getElementById('produto-informacoes')?.scrollIntoView({behavior:'smooth'});}} className="text-sm font-black text-orange-700 hover:underline">Ver informações técnicas ↓</button></div>
+            </section>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="flex items-start gap-3 rounded-xl border bg-white p-4"><ShieldCheck size={21} className="shrink-0 text-emerald-600"/><div><p className="text-sm font-bold">Compra protegida</p><p className="text-xs text-slate-500">Fluxo simulado, sem cobrança</p></div></div>
               <div className="flex items-start gap-3 rounded-xl border bg-white p-4"><PackageCheck size={21} className="shrink-0 text-orange-600"/><div><p className="text-sm font-bold">Informações da entrega</p><p className="text-xs text-slate-500">Prazos fictícios para demonstração</p></div></div>
@@ -108,11 +122,23 @@ export function ProductDetailsPage({product,products,favorite,onToggleFavorite,o
           <div className="mb-7 flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-extrabold uppercase tracking-widest text-orange-600">Comunidade</p><h2 className="mt-1 text-3xl font-black">Avaliações e comentários</h2><p className="mt-2 text-sm text-slate-500">Exemplos fictícios identificados + opiniões locais enviadas neste navegador. Não são compras verificadas.</p></div><div className="rounded-xl bg-slate-100 px-5 py-3"><p className="text-3xl font-black">{avg.toFixed(1)} <span className="text-base text-slate-500">/ 5</span></p><p className="text-xs text-slate-500">{reviewList.length} avaliações demonstrativas</p></div></div>
           <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr]">
             <div className="space-y-4">{reviewList.slice(0,showAllReviews?undefined:3).map(r=><article key={r.id} className="rounded-2xl border p-5"><div className="flex flex-wrap justify-between gap-2"><p className="font-bold">{r.name}</p><span className="flex gap-1 text-amber-500">{Array.from({length:5},(_,i)=><Star key={i} size={15} className={i<r.score?'fill-current':''}/>)}</span></div><p className="mt-2 font-black">{r.title}</p><p className="mt-2 text-sm leading-6 text-slate-600">{r.comment}</p><div className="mt-3 flex items-center gap-1 text-xs text-slate-400"><Clock3 size={13}/>{new Date(r.date).toLocaleDateString('pt-BR')} · {r.id.startsWith('sample')?'Exemplo fictício':'Enviado neste navegador'}</div></article>)}<button onClick={()=>setShowAllReviews(v=>!v)} className="text-sm font-bold text-orange-700 hover:underline">{showAllReviews?'Mostrar menos':'Ver todos os comentários'} ({reviewList.length})</button></div>
-            <form onSubmit={submitReview} className="h-fit rounded-2xl bg-slate-50 p-5"><h3 className="text-lg font-black">Escreva sua avaliação</h3><p className="mt-1 text-xs text-slate-500">Publicação local de demonstração, visível apenas neste navegador. Não use dados pessoais.</p><label className="mt-4 block text-sm font-semibold">Apelido<input maxLength={32} required value={name} onChange={e=>setName(e.target.value)} className="mt-1.5 w-full rounded-xl border bg-white px-3 py-2.5" placeholder="Seu apelido"/></label><label className="mt-3 block text-sm font-semibold">Nota<select value={score} onChange={e=>setScore(Number(e.target.value))} className="mt-1.5 w-full rounded-xl border bg-white px-3 py-2.5">{[5,4,3,2,1].map(n=><option key={n} value={n}>{n} estrela{n>1?'s':''}</option>)}</select></label><label className="mt-3 block text-sm font-semibold">Título<input maxLength={80} value={headline} onChange={e=>setHeadline(e.target.value)} className="mt-1.5 w-full rounded-xl border bg-white px-3 py-2.5"/></label><label className="mt-3 block text-sm font-semibold">Comentário<textarea required maxLength={1000} rows={4} value={message} onChange={e=>setMessage(e.target.value)} className="mt-1.5 w-full rounded-xl border bg-white px-3 py-2.5"/></label><button className="mt-4 w-full rounded-xl bg-slate-950 px-5 py-3 font-bold text-white hover:bg-slate-800">Publicar comentário local</button></form>
+            {canReview?<form onSubmit={submitReview} className="h-fit rounded-2xl bg-slate-50 p-5"><h3 className="text-lg font-black">Avalie seu produto</h3><p className="mt-1 text-xs text-slate-500">Você concluiu um pedido demonstrativo deste item. Sua avaliação é publicada apenas neste navegador e expira em sete dias.</p><label className="mt-4 block text-sm font-semibold">Apelido<input maxLength={32} required value={name} onChange={e=>setName(e.target.value)} className="mt-1.5 w-full rounded-xl border bg-white px-3 py-2.5" placeholder="Seu apelido"/></label><label className="mt-3 block text-sm font-semibold">Nota<select value={score} onChange={e=>setScore(Number(e.target.value))} className="mt-1.5 w-full rounded-xl border bg-white px-3 py-2.5">{[5,4,3,2,1].map(n=><option key={n} value={n}>{n} estrela{n>1?'s':''}</option>)}</select></label><label className="mt-3 block text-sm font-semibold">Título<input maxLength={80} value={headline} onChange={e=>setHeadline(e.target.value)} className="mt-1.5 w-full rounded-xl border bg-white px-3 py-2.5"/></label><label className="mt-3 block text-sm font-semibold">Comentário<textarea required maxLength={1000} rows={4} value={message} onChange={e=>setMessage(e.target.value)} className="mt-1.5 w-full rounded-xl border bg-white px-3 py-2.5"/></label>{reviewError&&<p role="alert" className="mt-3 text-sm text-rose-700">{reviewError}</p>}<button className="mt-4 w-full rounded-xl bg-orange-600 px-5 py-3 font-bold text-white hover:bg-orange-700">Publicar minha avaliação</button></form>:<aside className="h-fit rounded-2xl border border-orange-100 bg-orange-50 p-6"><h3 className="text-lg font-black text-slate-900">{alreadyReviewed?'Você já avaliou este produto':'Avaliações exclusivas de compradores'}</h3><p className="mt-2 text-sm leading-7 text-slate-600">{alreadyReviewed?'Obrigado por avaliar. Permitimos somente uma avaliação por produto e por conta.':!account?'Entre ou crie uma conta para acompanhar seus pedidos e avaliar os itens depois de concluir uma compra demonstrativa.':'Depois de concluir um pedido demonstrativo deste produto com esta conta, você poderá avaliá-lo uma vez.'}</p><p className="mt-3 text-xs text-slate-500">Não são avaliações de compras reais verificadas. As avaliações locais são apagadas após sete dias.</p></aside>}
           </div>
         </div>
       </section>
       <section className="mx-auto max-w-7xl px-4 py-12"><div className="mb-7"><p className="text-xs font-black uppercase tracking-widest text-orange-600">Combine com seu setup</p><h2 className="mt-2 text-3xl font-black">Você também pode gostar</h2></div><div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{recommendations.map(p=><ProductCard key={p.id} product={p} onAddToCart={onAddToCart} onViewDetails={onViewProduct}/>)}</div></section>
+
+      <section id="produto-informacoes" className="border-t bg-white py-12">
+        <div className="mx-auto max-w-7xl px-4">
+          <p className="text-xs font-black uppercase tracking-widest text-orange-600">Conheça todos os detalhes</p>
+          <h2 className="mt-2 text-3xl font-black text-slate-900">Descrição e informações técnicas</h2>
+          <div className="mt-6 flex flex-wrap gap-2 border-b pb-3" role="tablist" aria-label="Informações do produto">
+            <button role="tab" aria-selected={infoTab==='description'} onClick={()=>setInfoTab('description')} className={'rounded-xl px-5 py-3 text-sm font-black '+(infoTab==='description'?'bg-orange-600 text-white':'bg-slate-100 text-slate-700 hover:bg-slate-200')}>Ver descrição</button>
+            <button role="tab" aria-selected={infoTab==='specs'} onClick={()=>setInfoTab('specs')} className={'rounded-xl px-5 py-3 text-sm font-black '+(infoTab==='specs'?'bg-orange-600 text-white':'bg-slate-100 text-slate-700 hover:bg-slate-200')}>Ver informações técnicas</button>
+          </div>
+          {infoTab==='description'?<article role="tabpanel" className="mt-6 rounded-2xl border bg-slate-50 p-6 sm:p-9"><h3 className="text-xl font-black">{product.name}</h3><p className="mt-4 leading-8 text-slate-700">{product.details||product.description}</p><p className="mt-4 leading-7 text-slate-600">{product.description}</p></article>:<article role="tabpanel" className="mt-6 overflow-hidden rounded-2xl border"><table className="w-full text-left text-sm"><tbody>{[['Produto',product.name],['Categoria',product.category_id],['Código',product.id],...(product.features||[]).map((feature,i)=>['Especificação '+(i+1),feature])].map(([label,value],i)=><tr key={label} className={i%2===0?'bg-slate-50':'bg-white'}><th scope="row" className="w-1/3 border-r px-5 py-4 font-black text-slate-700">{label}</th><td className="px-5 py-4 text-slate-600">{value}</td></tr>)}</tbody></table><p className="border-t bg-orange-50 px-5 py-4 text-xs text-orange-900">Dados ilustrativos extraídos do catálogo; especificações completas devem ser confirmadas no site oficial do fabricante.</p></article>}
+        </div>
+      </section>
     </main>
     <Footer onInfoClick={onInfoClick}/>
   </div>;
