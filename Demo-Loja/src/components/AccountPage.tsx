@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { ArrowLeft, CircleUserRound, ClipboardList, Home, LockKeyhole, LogOut, MapPin, RefreshCw, ShieldCheck, UserRoundPlus, UserRound } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CircleUserRound, ClipboardList, Home, LockKeyhole, LogOut, MapPin, RefreshCw, ShieldCheck, UserRoundPlus, UserRound } from 'lucide-react';
 import { MFASecurity } from './MFASecurity';
 import { supabase } from '../lib/supabase';
 import { profileFromUser, type AccountProfile, type DeliveryAddress } from '../lib/customerAccount';
@@ -25,6 +25,7 @@ export function AccountPage({account,orders,initialTab='profile',onBack,onChange
   const [phone,setPhone]=useState(account?.phone||'');
   const [address,setAddress]=useState<DeliveryAddress>(account?.address||blankAddress);
   const [message,setMessage]=useState('');
+  const [accountExists,setAccountExists]=useState(false);
   const [busy,setBusy]=useState(false);
   const [remoteOrders,setRemoteOrders]=useState<DemoSale[]>([]);
   const [loadingOrders,setLoadingOrders]=useState(false);
@@ -72,14 +73,28 @@ export function AccountPage({account,orders,initialTab='profile',onBack,onChange
   },[account?.id,account?.demo,reloadOrders]);
   useEffect(()=>{setName(account?.name||'');setEmail(account?.email||'');setPhone(account?.phone||'');setAddress(account?.address||blankAddress);},[account]);
   const handleAuth=async(event:FormEvent<HTMLFormElement>)=>{
-    event.preventDefault();setMessage('');setBusy(true);
+    event.preventDefault();setMessage('');setAccountExists(false);setBusy(true);
     try{
       if(supabase) {
         if(!email.trim()||password.length<8){setMessage('Informe um e-mail válido e senha de pelo menos 8 caracteres.');return;}
         if(authTab==='register'){
           if(name.trim().length<2){setMessage('Informe o nome para criar a conta.');return;}
           const {data,error}=await supabase.auth.signUp({email:email.trim(),password,options:{data:{full_name:name.trim()},emailRedirectTo:window.location.origin+import.meta.env.BASE_URL}});
-          if(error)throw error;
+          // Supabase may return an obfuscated user with no identities for a repeat signup.
+          // Never query auth.users from a public client to guess whether an address exists.
+          if(error){
+            if(error.code==='user_already_exists'||/user already registered/i.test(error.message)){
+              setAccountExists(true);
+              setMessage('Essa conta já existe! Entre com seu e-mail e senha.');
+              return;
+            }
+            throw error;
+          }
+          if(data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){
+            setAccountExists(true);
+            setMessage('Essa conta já existe! Entre com seu e-mail e senha.');
+            return;
+          }
           if(data.session&&data.user){onChange(profileFromUser(data.user));setMessage('Cadastro concluído. Verifique seu e-mail se a confirmação estiver ativada.');}
           else {
             try{sessionStorage.setItem('techstore_confirmation_email',email.trim().toLowerCase());}catch{/* Private mode */}
@@ -141,17 +156,22 @@ export function AccountPage({account,orders,initialTab='profile',onBack,onChange
       <div className="mb-8"><p className="text-xs font-black uppercase tracking-widest text-orange-600">Área do cliente</p><h1 className="mt-2 text-3xl font-black sm:text-4xl">{account?'Olá, '+account.name.split(' ')[0]+'!':'Sua conta TechStore'}</h1><p className="mt-2 text-sm leading-6 text-slate-500">{account?'Consulte seu perfil, endereços e pedidos demonstrativos.':'Crie seu perfil, salve um endereço e conheça a experiência de compra personalizada.'}</p></div>
       {!account?<div className="grid items-start gap-6 lg:grid-cols-[1.1fr_.9fr]">
         <section className="rounded-2xl border bg-white p-6 shadow-sm sm:p-8">
-          {supabase?<div className="mb-6 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1"><button onClick={()=>{setAuthTab('register');setMessage('');}} className={'rounded-lg px-4 py-3 text-sm font-bold '+(authTab==='register'?'bg-white text-orange-700 shadow-sm':'text-slate-500')}>Criar conta</button><button onClick={()=>{setAuthTab('login');setMessage('');}} className={'rounded-lg px-4 py-3 text-sm font-bold '+(authTab==='login'?'bg-white text-orange-700 shadow-sm':'text-slate-500')}>Entrar</button></div>:null}
+          {supabase?<div className="mb-6 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1"><button onClick={()=>{setAuthTab('register');setMessage('');setAccountExists(false);}} className={'rounded-lg px-4 py-3 text-sm font-bold '+(authTab==='register'?'bg-white text-orange-700 shadow-sm':'text-slate-500')}>Criar conta</button><button onClick={()=>{setAuthTab('login');setMessage('');setAccountExists(false);}} className={'rounded-lg px-4 py-3 text-sm font-bold '+(authTab==='login'?'bg-white text-orange-700 shadow-sm':'text-slate-500')}>Entrar</button></div>:null}
           <h2 className="flex items-center gap-2 text-xl font-black"><UserRoundPlus className="text-orange-600"/>{supabase?(authTab==='register'?'Criar conta':'Entrar na minha conta'):'Criar perfil demonstrativo'}</h2>
           <p className="mt-2 text-sm leading-6 text-slate-500">{supabase?'A autenticação usará o Supabase, se estiver configurado para este domínio.':'Sem backend conectado: o perfil será salvo somente neste dispositivo. Nenhum e-mail, confirmação ou senha serão enviados.'}</p>
           <form className="mt-6 space-y-4" onSubmit={handleAuth}>
             {(!supabase||authTab==='register')&&<label className="block text-sm font-semibold">Nome<input required value={name} onChange={e=>setName(e.target.value)} minLength={2} placeholder="Cliente Exemplo" className="mt-2 w-full rounded-xl border px-4 py-3"/></label>}
-            <label className="block text-sm font-semibold">E-mail<input required type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="cliente@example.com" className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
+            <label className="block text-sm font-semibold">E-mail<input required type="email" value={email} onChange={e=>{setEmail(e.target.value);setAccountExists(false);setMessage('');}} placeholder="cliente@example.com" className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
             {supabase&&<label className="block text-sm font-semibold">Senha<input required type="password" minLength={8} autoComplete={authTab==='register'?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Pelo menos 8 caracteres" className="mt-2 w-full rounded-xl border px-4 py-3"/></label>}
             <button disabled={busy} className="w-full rounded-xl bg-orange-600 px-5 py-4 font-black text-white hover:bg-orange-500 disabled:opacity-50">{busy?'Processando...':supabase?(authTab==='register'?'Criar minha conta':'Entrar na conta'):'Criar perfil local'}</button>
           </form>
           {supabase&&<button type="button" onClick={()=>{try{sessionStorage.setItem('techstore_confirmation_email',email.trim().toLowerCase());}catch{/* Private mode */}window.location.hash='/confirmar-email';}} className="mt-4 w-full text-center text-sm font-bold text-orange-700 hover:underline">Não recebeu o e-mail? Confirmar por código ou reenviar</button>}
-          {message&&<p role="status" className="mt-5 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">{message}</p>}
+          {message&&(accountExists?
+            <div role="alert" className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-5 text-rose-900">
+              <div className="flex items-start gap-3"><AlertCircle size={22} className="mt-0.5 shrink-0 text-rose-600"/><div><p className="font-black">Este e-mail já está cadastrado</p><p className="mt-1 text-sm leading-6">{message}</p></div></div>
+              <button type="button" onClick={()=>{setAuthTab('login');setAccountExists(false);setMessage('');setPassword('');}} className="mt-4 w-full rounded-xl bg-[#0c285a] px-5 py-3 text-sm font-bold text-white hover:bg-[#17417b]">Entrar na minha conta</button>
+            </div>:
+            <p role="status" className="mt-5 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">{message}</p>)}
           {supabase&&<div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-sm font-bold text-amber-900">Quer apenas testar o site?</p><p className="mt-2 text-xs leading-6 text-amber-900">Se o envio de e-mails ainda não estiver habilitado, você pode criar um perfil local sem senha e sem mensagem de confirmação. Esse perfil não é uma conta autenticada e será limpo após sete dias.</p><button type="button" onClick={()=>{if(name.trim().length<2){setMessage('Digite um nome de teste antes de continuar.');return;}onChange({id:'demo-local',name:name.trim(),email:email.trim()||'demo@example.com',phone:'',address:null,demo:true});setMessage('Perfil local de teste criado. Nenhum e-mail foi enviado.');}} className="mt-3 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-amber-700">Usar perfil demonstrativo local</button></div>}
           {!supabase&&<p className="mt-5 rounded-xl bg-amber-50 p-4 text-xs leading-6 text-amber-900">A TechStore está hospedada no GitHub Pages. A autenticação real e o envio de e-mail dependem de configurar Supabase Auth e SMTP. Não use senha ou dados pessoais reais neste modo.</p>}
         </section>
