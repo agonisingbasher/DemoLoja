@@ -18,6 +18,7 @@ import { MFASecurity } from './components/MFASecurity';
 import { defaultCouponBanner, couponBannerKey, type CouponBanner } from './lib/couponBanner';
 import { loadDemoAccount, saveDemoAccount, profileFromUser, type AccountProfile } from './lib/customerAccount';
 import { supabase } from './lib/supabase';
+import { localeForIntl, translate, useLocale } from './i18n';
 import { catalogProducts } from './lib/catalogProducts';
 import type { Category, Product } from './lib/supabase';
 
@@ -95,6 +96,7 @@ purgeExpiredDemoData();
 
 // TechStore demo storefront with local admin, inventory and sales state.
 export default function App() {
+  const {locale}=useLocale();
   const [products, setProducts] = useState<Product[]>(() => {
     const defaults = catalogProducts as Product[];
     const stored = readStorage(PRODUCTS_KEY, defaults);
@@ -198,10 +200,12 @@ export default function App() {
   }, [notice]);
 
   const filteredProducts = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase('pt-BR');
+    const language=localeForIntl(locale);
+    const term=search.trim().toLocaleLowerCase(language);
     const result = products.filter((product) => {
       const matchesCategory = !category || product.category_id === category;
-      const matchesTerm = !term || product.name.toLocaleLowerCase('pt-BR').includes(term) || product.description.toLocaleLowerCase('pt-BR').includes(term);
+      const texts=[product.name,product.description,product.details,...product.features];
+      const matchesTerm = !term || texts.some(value=>value.toLocaleLowerCase(language).includes(term)||translate(value,locale).toLocaleLowerCase(language).includes(term));
       const matchesFavorite = !favoritesOnly || favorites.includes(product.id);
       return matchesCategory && matchesTerm && matchesFavorite;
     });
@@ -209,10 +213,10 @@ export default function App() {
       if (sort === 'price-asc') return a.price - b.price;
       if (sort === 'price-desc') return b.price - a.price;
       if (sort === 'rating') return b.rating - a.rating;
-      if (sort === 'name') return a.name.localeCompare(b.name, 'pt-BR');
+      if (sort === 'name') return translate(a.name,locale).localeCompare(translate(b.name,locale),localeForIntl(locale));
       return Number(b.featured) - Number(a.featured);
     });
-  }, [products, category, favorites, favoritesOnly, search, sort]);
+  }, [products, category, favorites, favoritesOnly, search, sort, locale]);
   useEffect(() => { setPage(1); }, [category, favoritesOnly, search, sort]);
   const pages = Math.max(1, Math.ceil(filteredProducts.length / 9));
   const pagedProducts = filteredProducts.slice((page-1)*9,page*9);
