@@ -1,50 +1,47 @@
-# TechStore — Loja Gamer Demonstrativa
+# TechStore — E-commerce Gamer Demonstrativo
 
-A TechStore é um projeto de e-commerce demonstrativo desenvolvido para praticar e apresentar habilidades de desenvolvimento frontend. O catálogo reúne consoles, periféricos e acessórios gamer. Não é uma loja comercial e não realiza pagamentos reais.
+**Site:** https://agonisingbasher.github.io/DemoLoja/  
+**Apresentação técnica completa:** [Rushingwind](APRESENTACAO-TECHSTORE-RUSHINGWIND.md)  
+**Configuração de conta/e-mail/2FA:** [Guia Supabase](CONFIGURAR-CONTAS-E-EMAIL.md)
 
-## Tecnologias
+A TechStore é um projeto **educacional e de portfólio**: reproduz interfaces e interações de uma loja gamer, mas não processa pagamentos reais, não entrega mercadorias, não emite documentos fiscais e não integra transportadoras.
 
-- **React 18** — construção da interface.
-- **TypeScript** — tipagem estática.
-- **Vite** — ambiente de desenvolvimento e build.
-- **Tailwind CSS** — estilização responsiva.
-- **Lucide React** — biblioteca de ícones.
-- **Supabase** — serviços e estrutura preparados para uma futura integração com banco de dados.
+## Tecnologias confirmadas
+
+- React 18, TypeScript e JavaScript — componentes e lógica.
+- HTML5, CSS3 e Tailwind CSS 3 — estrutura visual e responsividade.
+- Vite 5 — desenvolvimento e build.
+- Lucide React — ícones.
+- Supabase JS 2, Supabase Auth e PostgreSQL — autenticação e persistência das informações que já foram integradas.
+- SQL/PLpgSQL e Row Level Security (RLS) — modelagem, validação e proteção de dados.
+- Supabase MFA TOTP — autenticação opcional em dois fatores por aplicativo.
+- pg_cron — limpeza de dados demonstrativos em sete dias.
+- GitHub Actions + GitHub Pages — integração/entrega contínua e hospedagem do frontend.
+
+A aplicação é um **frontend React estático com Backend-as-a-Service (Supabase)**, e não um projeto de Next.js, .NET ou Express.
 
 ## Funcionalidades
 
-- Catálogo de produtos com imagens, preços, avaliações, descontos e estoque.
-- Busca de produtos por nome e descrição.
-- Filtro por categoria.
-- Ordenação por destaque, preço, avaliação e nome.
-- Lista de favoritos salva no armazenamento local do navegador.
-- Carrinho com adição, remoção e alteração de quantidades.
-- Validação da quantidade de acordo com o estoque cadastrado.
-- Cálculo demonstrativo de subtotal, entrega e total.
-- Frete grátis em compras demonstrativas a partir de R$ 499,00.
-- Formulário de entrega e confirmação de pedido demonstrativo.
-- Persistência do carrinho e dos favoritos após atualizar a página.
-- Layout responsivo para dispositivos móveis e desktop.
+Catálogo de 40 produtos, categorias com ícones, ofertas, favoritos, busca, paginação, detalhes de produto e ficha técnica, cupons, montagem de PC com validações básicas, checkout em seis etapas, área do cliente, pedidos simulados registrados no Supabase para contas autenticadas, avaliações de compradores demonstrativos, rastreamento ilustrativo de pedidos, painel administrativo visual local, templates personalizados de e-mail e 2FA TOTP.
 
-## Como executar localmente
+O carrinho, preferências e parte da administração continuam armazenados no navegador. Cadastro e login reais usam Supabase Auth. O HTML do novo e-mail de confirmação foi preparado, mas precisa ser aplicado em Authentication > Email Templates, e um provedor SMTP externo deve ser configurado para envio confiável a visitantes externos.
 
-1. Instale o [Node.js](https://nodejs.org/).
-2. Entre na pasta do projeto:
-   `cd Demo-Loja`
-3. Instale as dependências:
-   `npm install`
-4. Inicie o servidor:
-   `npm run dev`
-5. Para validar os tipos e gerar a versão de produção:
-   `npm run typecheck`
-   `npm run build`
+## Executar
 
-## Limitações da demonstração
+Use Node.js e npm:
 
-O catálogo utilizado atualmente está definido localmente em `src/lib/catalogProducts.ts`. Carrinho e favoritos são armazenados no navegador com `localStorage`. A finalização gera apenas uma confirmação visual e um código fictício: não há cobrança, envio de e-mail, processamento de pagamento, autenticação de usuário ou registro real de pedidos. A integração Supabase está preparada em serviços separados, mas depende de configuração e conexão para ser utilizada.
+1. Entre no diretório Demo-Loja.
+2. Execute npm ci.
+3. Execute npm run dev para desenvolvimento local.
+4. Execute npm run typecheck e npm run build antes de publicar.
+5. Execute npm run lint para inspecionar regras de lint.
 
----
+No GitHub, o workflow deploy-pages.yml executa npm ci, TypeScript typecheck e build Vite com Node.js 22, publicando o diretório dist no GitHub Pages.
 
-Projeto desenvolvido por **Felipe Alexandre (AgonisingBasher)**.
+## Limitações e próximos passos
 
-GitHub: https://github.com/agonisingbasher
+Os pedidos são simulações, sem transações financeiras, NF-e ou entregas. A administração por admin/admin não é autenticação real de administrador e só deve ser usada na demonstração. O acompanhamento de pedidos utiliza uma linha do tempo fictícia, não eventos de transportadora.
+
+Próximos passos: aplicar o e-mail personalizado e configurar Site URL/SMTP no Supabase; validar 2FA e confirmação com uma conta de teste; adicionar testes automatizados e administração de banco com papéis e auditoria.
+
+Projeto desenvolvido por Felipe Alexandre (AgonisingBasher).
