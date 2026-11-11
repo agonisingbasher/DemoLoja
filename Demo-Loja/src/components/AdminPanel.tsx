@@ -8,6 +8,7 @@ export interface DemoSale {
   id: string;
   customer: string;
   email: string;
+  userId?: string;
   date: string;
   total: number;
   items: { productId: string; name: string; quantity: number; unitPrice: number }[];
