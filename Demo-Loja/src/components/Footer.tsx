@@ -1,3 +1,4 @@
+import { useLocale } from '../i18n';
 import { ArrowUpRight, Github, Instagram, Mail, MapPin, Phone, ShieldCheck, Truck, CreditCard, Headphones, Youtube } from 'lucide-react';
 
 interface FooterProps {
@@ -8,6 +9,7 @@ const institutional = ['Sobre Nós', 'Trabalhe Conosco', 'Política de Privacida
 const support = ['Central de Ajuda', 'Trocas e Devoluções', 'Rastreamento', 'FAQ'];
 
 export const Footer = ({ onInfoClick }: FooterProps) => {
+  const {locale}=useLocale();
   const linkClass = 'group inline-flex items-center gap-1 text-sm text-slate-400 transition hover:text-white';
   const socialClass = 'grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-300 transition hover:-translate-y-0.5 hover:border-orange-400/50 hover:bg-orange-500 hover:text-white';
 
@@ -28,7 +30,7 @@ export const Footer = ({ onInfoClick }: FooterProps) => {
             <span className="text-2xl font-black tracking-tight">Tech<span className="text-orange-400">Store</span></span>
           </button>
           <p className="mt-5 max-w-sm text-sm leading-7 text-slate-400">Tecnologia, games e acessórios para inspirar seu próximo setup. Explore uma experiência de e-commerce criada para demonstração.</p>
-          <a href="https://agonisingbasher.github.io/personal-website/?lang=pt-BR" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-orange-300 hover:text-orange-200" target="_blank" rel="noopener noreferrer">← Voltar ao meu portfólio <ArrowUpRight size={14}/></a>
+          <a href={'https://agonisingbasher.github.io/personal-website/?lang='+locale} className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-orange-300 hover:text-orange-200" target="_blank" rel="noopener noreferrer">← Voltar ao meu portfólio <ArrowUpRight size={14}/></a>
           <div className="mt-6 flex gap-2">
             <a aria-label="GitHub AgonisingBasher (nova aba)" href="https://github.com/agonisingbasher" target="_blank" rel="noopener noreferrer" className={socialClass}><Github size={18}/></a>
             <a aria-label="Instagram Felipe Alexandre (nova aba)" href="https://www.instagram.com/felipealexandre10/" target="_blank" rel="noopener noreferrer" className={socialClass}><Instagram size={18}/></a>
