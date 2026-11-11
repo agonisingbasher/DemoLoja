@@ -9,6 +9,7 @@ export interface DemoSale {
   customer: string;
   email: string;
   userId?: string;
+  backendRecorded?: boolean;
   date: string;
   total: number;
   items: { productId: string; name: string; quantity: number; unitPrice: number }[];
