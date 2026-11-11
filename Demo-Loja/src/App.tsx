@@ -202,11 +202,21 @@ export default function App() {
       : [...current, productId]);
   };
 
-  const finishDemoOrder = (payload:CheckoutSubmission):string => {
+  const finishDemoOrder = async (payload:CheckoutSubmission):Promise<string> => {
+    let remoteReference:string|undefined;
+    if(supabase && account && !account.demo){
+      const {data,error}=await supabase.rpc('create_demo_order',{
+        p_items:cartProducts.map(({product,quantity})=>({productId:product.id,quantity})),
+        p_payment_method:payload.paymentMethod
+      });
+      if(error)throw new Error('Não foi possível registrar o pedido na sua conta: '+error.message);
+      remoteReference=data?.[0]?.order_reference;
+    }
     const sale:DemoSale = {
-      id:'TS-'+Date.now().toString().slice(-8),
+      id:remoteReference || 'TS-'+Date.now().toString().slice(-8),
       customer:payload.customer, email:account?.email || payload.email,
       userId:account?.id,
+      backendRecorded:Boolean(remoteReference),
       date:new Date().toISOString(), total:payload.total,
       status:'Recebido', paymentMethod:payload.paymentMethod,
       couponCode:payload.couponCode, discount:payload.discount, shipping:payload.shipping,
@@ -252,7 +262,7 @@ export default function App() {
     onInfoClick={openInfo}/>;
   if (accountPage) return <AccountPage account={account} initialTab={accountTab} orders={sales} onBack={closeSpecial} onChange={updateAccount} onInfoClick={openInfo}/>;
   if (selectedProduct) return <ProductDetailsPage
-    product={selectedProduct} products={products} favorite={favorites.includes(selectedProduct.id)}
+    product={selectedProduct} products={products} orders={sales} account={account} favorite={favorites.includes(selectedProduct.id)}
     onToggleFavorite={toggleFavorite} onBack={()=>{setSelectedProductId(null);window.scrollTo(0,0);}}
     onAddToCart={id=>{addToCart(id);openCheckout();}}
     onViewProduct={id=>{setSelectedProductId(id);window.scrollTo(0,0);}}
