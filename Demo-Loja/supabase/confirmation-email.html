@@ -1,15 +1,50 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"></head>
-<body style="font-family:Arial,sans-serif;background:#f3f6fb;padding:32px;color:#15233d">
-  <table role="presentation" style="max-width:560px;margin:auto;background:#fff;border-radius:16px;border:1px solid #e2e8f0" cellpadding="0" cellspacing="0">
-    <tr><td style="background:#0c285a;color:#fff;padding:28px;border-radius:16px 16px 0 0;font-size:26px;font-weight:800">Tech<span style="color:#fb923c">Store</span></td></tr>
-    <tr><td style="padding:32px">
-      <h1 style="margin:0 0 12px;font-size:24px">Obrigado por se cadastrar!</h1>
-      <p>Olá {{ .Data.full_name }}, seja bem-vindo(a) à TechStore.</p>
-      <p>Estamos felizes por você explorar nossa loja demonstrativa. Confirme seu e-mail para ativar a conta:</p>
-      <p style="margin:32px 0"><a style="background:#ea580c;color:white;text-decoration:none;border-radius:8px;padding:14px 20px;font-weight:700" href="{{ .ConfirmationURL }}">Confirmar meu e-mail</a></p>
-      <p style="font-size:13px;line-height:1.6;color:#64748b">Este site é uma demonstração de portfólio. Não processamos pagamentos nem entregamos produtos.</p>
-      <p style="font-size:12px;color:#64748b">Caso não tenha solicitado este cadastro, ignore este e-mail.</p>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TechStore | Confirme seu e-mail</title>
+</head>
+<body style="margin:0;padding:0;background:#eef2f8;font-family:Arial,Helvetica,sans-serif;color:#16213b;-webkit-text-size-adjust:100%;text-size-adjust:100%;">
+  <div style="display:none;font-size:1px;color:#eef2f8;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">Confirme sua conta TechStore com o código de uso único enviado neste e-mail.</div>
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;background:#eef2f8;">
+    <tr><td align="center" style="padding:36px 12px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="width:100%;max-width:600px;border-collapse:separate;border-spacing:0;background:#ffffff;border:1px solid #dce4f0;border-radius:22px;overflow:hidden;">
+        <tr><td style="padding:30px 34px;background:#091b3d;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+            <td style="color:#fff;font-size:25px;font-weight:900;letter-spacing:-1px;"><span style="display:inline-block;background:#ea580c;color:#ffffff;border-radius:10px;padding:9px 13px;margin-right:9px;font-size:20px;">T</span>Tech<span style="color:#fb923c;">Store</span></td>
+            <td align="right" style="color:#bfdbfe;font-size:10px;font-weight:700;letter-spacing:2px;">CONTA SEGURA</td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="padding:40px 34px 26px;background:#0b2a63;color:#ffffff;">
+          <span style="display:inline-block;border:1px solid #fbbf24;color:#fed7aa;border-radius:30px;padding:7px 12px;font-size:10px;font-weight:700;letter-spacing:2px;">BEM-VINDO À TECHSTORE</span>
+          <h1 style="font-size:34px;line-height:1.15;letter-spacing:-1px;margin:21px 0 14px;color:#fff;">O próximo upgrade começa com uma conta <span style="color:#fb923c;">mais segura.</span></h1>
+          <p style="margin:0;color:#cbdcf5;font-size:15px;line-height:1.8;">Olá, <strong style="color:#ffffff;">{{ .Data.full_name }}</strong>! Obrigado por se cadastrar na TechStore. Falta apenas confirmar que este endereço de e-mail é seu.</p>
+        </td></tr>
+        <tr><td style="padding:32px 34px 8px;">
+          <h2 style="font-size:20px;margin:0 0 12px;color:#0c285a;">Confirme seu e-mail</h2>
+          <p style="font-size:14px;line-height:1.8;color:#52617d;margin:0 0 22px;">Abra a página de confirmação da TechStore e digite este código temporário. Por segurança, o código só pode ser utilizado uma vez.</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="background:#f2f6fc;border:2px dashed #fdba74;border-radius:14px;padding:22px 12px;">
+            <p style="font-size:11px;font-weight:800;letter-spacing:2px;color:#9a4c1b;margin:0 0 12px;">SEU CÓDIGO DE CONFIRMAÇÃO</p>
+            <p style="font-size:36px;font-weight:900;letter-spacing:8px;color:#0c285a;margin:0;font-family:Arial,Helvetica,sans-serif;">{{ .Token }}</p>
+          </td></tr></table>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:27px 0 13px;">
+            <a href="https://agonisingbasher.github.io/DemoLoja/#/confirmar-email" style="display:inline-block;border-radius:12px;background:#ea580c;padding:16px 27px;color:#fff;font-size:15px;font-weight:800;text-decoration:none;">Confirmar conta TechStore &rarr;</a>
+          </td></tr></table>
+          <p style="text-align:center;color:#64748b;font-size:12px;line-height:1.6;margin:0;">Se o botão não abrir, acesse:<br><a style="color:#ea580c;text-decoration:underline;word-break:break-all;" href="https://agonisingbasher.github.io/DemoLoja/#/confirmar-email">agonisingbasher.github.io/DemoLoja/#/confirmar-email</a></p>
+        </td></tr>
+        <tr><td style="padding:25px 34px 30px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-top:1px solid #e6edf5;padding-top:24px;">
+            <p style="margin:0 0 8px;color:#0c285a;font-size:14px;font-weight:800;">🔒 Proteja seu acesso</p>
+            <p style="margin:0;color:#52617d;font-size:12px;line-height:1.8;">Depois de entrar, abra <strong>Minha Conta → Segurança · 2FA</strong> para ativar um aplicativo autenticador. Se você não solicitou este cadastro, ignore a mensagem.</p>
+          </td></tr></table>
+        </td></tr>
+        <tr><td align="center" style="padding:24px 34px;background:#08152e;">
+          <p style="margin:0 0 9px;font-size:12px;font-weight:700;color:#ffffff;">TechStore • Projeto demonstrativo de e-commerce</p>
+          <p style="margin:0;color:#93a8c7;font-size:11px;line-height:1.8;">Este site não processa cobranças, não emite notas fiscais e não realiza entregas.<br>Não responda a este e-mail. Nunca envie senhas ou códigos a terceiros.</p>
+        </td></tr>
+      </table>
+      <p style="margin:20px 0 0;color:#8493aa;font-size:11px;">© 2026 TechStore · Desenvolvido para demonstração de engenharia de software.</p>
     </td></tr>
   </table>
 </body></html>
