@@ -74,7 +74,11 @@ export function AccountPage({account,orders,initialTab='profile',onBack,onChange
     catch(err){setMessage(err instanceof Error?err.message:'Não foi possível sair.');}
     finally{setBusy(false);}
   };
-  const userOrders=account?orders.filter(order=>order.email.toLowerCase()===account.email.toLowerCase()):[];
+  const userOrders=account?orders.filter(order=>{
+    if (order.userId) return order.userId===account.id;
+    // Backwards compatibility for purchases created before account linkage.
+    return order.email.trim().toLowerCase()===account.email.trim().toLowerCase();
+  }).sort((a,b)=>new Date(b.date).getTime()-new Date(a.date).getTime()):[];
   return <div className="min-h-screen bg-[#f3f6fb] text-slate-900">
     <div className="bg-[#08152e] p-2 text-center text-xs text-slate-200">TechStore · Identidade demonstrativa · Não forneça dados pessoais reais no modo de teste</div>
     <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0c285a] text-white"><div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4"><button onClick={onBack} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold hover:bg-white/10"><ArrowLeft size={18}/> Voltar à loja</button><button onClick={onBack} className="text-xl font-black">Tech<span className="text-orange-400">Store</span></button><span className="hidden items-center gap-2 text-xs font-bold sm:flex"><LockKeyhole size={17}/> Espaço do cliente</span></div></header>
