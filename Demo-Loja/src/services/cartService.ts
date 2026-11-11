@@ -8,11 +8,16 @@ const getSessionId = (): string => {
   }
   return sessionId;
 };
+const requireClient=()=>{
+  if (!supabase) throw new Error('Backend Supabase não configurado para este serviço.');
+  return supabase;
+};
+
 
 export const getCartItems = async (): Promise<CartItem[]> => {
   const sessionId = getSessionId();
 
-  const { data, error } = await supabase
+  const { data, error } = await requireClient()
     .from('cart_items')
     .select('*, products(*)')
     .eq('session_id', sessionId);
@@ -28,7 +33,7 @@ export const getCartItems = async (): Promise<CartItem[]> => {
 export const addToCart = async (productId: string): Promise<boolean> => {
   const sessionId = getSessionId();
 
-  const { data: existingItem } = await supabase
+  const { data: existingItem } = await requireClient()
     .from('cart_items')
     .select('*')
     .eq('session_id', sessionId)
@@ -36,7 +41,7 @@ export const addToCart = async (productId: string): Promise<boolean> => {
     .maybeSingle();
 
   if (existingItem) {
-    const { error } = await supabase
+    const { error } = await requireClient()
       .from('cart_items')
       .update({ quantity: existingItem.quantity + 1 })
       .eq('id', existingItem.id);
@@ -46,7 +51,7 @@ export const addToCart = async (productId: string): Promise<boolean> => {
       return false;
     }
   } else {
-    const { error } = await supabase
+    const { error } = await requireClient()
       .from('cart_items')
       .insert({ session_id: sessionId, product_id: productId, quantity: 1 });
 
@@ -64,7 +69,7 @@ export const updateCartItemQuantity = async (itemId: string, quantity: number): 
     return removeFromCart(itemId);
   }
 
-  const { error } = await supabase
+  const { error } = await requireClient()
     .from('cart_items')
     .update({ quantity })
     .eq('id', itemId);
@@ -78,7 +83,7 @@ export const updateCartItemQuantity = async (itemId: string, quantity: number): 
 };
 
 export const removeFromCart = async (itemId: string): Promise<boolean> => {
-  const { error } = await supabase
+  const { error } = await requireClient()
     .from('cart_items')
     .delete()
     .eq('id', itemId);
@@ -94,7 +99,7 @@ export const removeFromCart = async (itemId: string): Promise<boolean> => {
 export const clearCart = async (): Promise<boolean> => {
   const sessionId = getSessionId();
 
-  const { error } = await supabase
+  const { error } = await requireClient()
     .from('cart_items')
     .delete()
     .eq('session_id', sessionId);
