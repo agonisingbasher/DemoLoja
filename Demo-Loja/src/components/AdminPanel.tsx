@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Activity, BarChart3, Bell, Boxes, CalendarDays, Download, Gift, LayoutDashboard, LogOut, PackagePlus, Search, ShoppingBag, Trash2, TrendingUp, Users, AlertTriangle, Wallet, CheckCircle2 } from 'lucide-react';
 import { coupons } from '../lib/promotions';
+import { defaultCouponBanner, type CouponBanner } from '../lib/couponBanner';
 import type { Product } from '../lib/supabase';
 
 export interface DemoSale {
@@ -26,13 +27,17 @@ interface AdminPanelProps {
   onUpdateSaleStatus: (id: string, status: NonNullable<DemoSale['status']>) => void;
   onUpdateProduct: (id: string, patch: Partial<Product>) => void;
   onSeedDemoSales: (items: DemoSale[]) => void;
+  couponBanner:CouponBanner;
+  onUpdateCouponBanner:(banner:CouponBanner)=>void;
 }
 const money = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-export function AdminPanel({ products, sales, onAddProduct, onDeleteProduct, onUpdateStock, onLogout, onUpdateSaleStatus, onUpdateProduct, onSeedDemoSales }: AdminPanelProps) {
+export function AdminPanel({ products, sales, onAddProduct, onDeleteProduct, onUpdateStock, onLogout, onUpdateSaleStatus, onUpdateProduct, onSeedDemoSales, couponBanner, onUpdateCouponBanner }: AdminPanelProps) {
   const [tab, setTab] = useState<'overview' | 'products' | 'sales' | 'inventory' | 'customers' | 'marketing' | 'analytics'>('overview');
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Todos');
   const [period, setPeriod] = useState<'7'|'30'|'all'>('30');
+  const [bannerDraft,setBannerDraft]=useState<CouponBanner>(couponBanner);
+  const [bannerSaved,setBannerSaved]=useState(false);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -181,6 +186,17 @@ export function AdminPanel({ products, sales, onAddProduct, onDeleteProduct, onU
       </section>}
       {tab === 'marketing' && <section>
         <div className="mb-6"><h2 className="text-3xl font-black">Marketing e campanhas</h2><p className="mt-2 text-sm text-slate-500">Ofertas e códigos promocionais demonstrativos. Não há disparo de anúncios ou vendas reais.</p></div>
+
+        <div className="mb-8 grid gap-5 rounded-2xl border bg-white p-5 shadow-sm xl:grid-cols-[1fr_1fr] sm:p-7">
+          <form onSubmit={event=>{event.preventDefault();onUpdateCouponBanner({...bannerDraft,imageUrl:bannerDraft.imageUrl.startsWith('https://')?bannerDraft.imageUrl:''});setBannerSaved(true);}} className="space-y-4">
+            <div><p className="text-xs font-black uppercase tracking-widest text-orange-600">Editor visual · Campanha</p><h3 className="mt-2 text-xl font-black">Banner da Central de Cupons</h3><p className="mt-2 text-xs leading-5 text-slate-500">Edite os textos e a imagem de fundo. As alterações serão vistas na página de cupons deste navegador.</p></div>
+            {([{key:'eyebrow',name:'Selo do banner'},{key:'title',name:'Título principal'},{key:'highlight',name:'Texto em destaque'},{key:'description',name:'Descrição'}] as {key:keyof CouponBanner;name:string}[]).map(({key,name})=><label key={key} className="block text-sm font-semibold">{name}<input maxLength={key==='description'?300:80} value={bannerDraft[key]} onChange={e=>{setBannerDraft(v=>({...v,[key]:e.target.value}));setBannerSaved(false);}} className="mt-1.5 w-full rounded-xl border px-4 py-2.5 font-normal"/></label>)}
+            <label className="block text-sm font-semibold">Imagem opcional de fundo (URL HTTPS)<input value={bannerDraft.imageUrl} onChange={e=>{setBannerDraft(v=>({...v,imageUrl:e.target.value}));setBannerSaved(false);}} placeholder="https://exemplo.com/banner.jpg" className="mt-1.5 w-full rounded-xl border px-4 py-2.5 font-normal"/></label>
+            <div className="flex flex-wrap gap-2"><button className="rounded-xl bg-orange-600 px-5 py-3 text-sm font-black text-white hover:bg-orange-500">Salvar banner</button><button type="button" onClick={()=>{setBannerDraft(defaultCouponBanner);onUpdateCouponBanner(defaultCouponBanner);setBannerSaved(true);}} className="rounded-xl border px-5 py-3 text-sm font-bold">Restaurar padrão</button></div>
+            {bannerSaved&&<p role="status" className="text-sm font-semibold text-emerald-700">Banner salvo neste navegador. Abra a Central de Cupons para visualizar.</p>}
+          </form>
+          <div><p className="mb-3 text-xs font-black uppercase tracking-widest text-slate-500">Prévia ao vivo</p><div className="relative flex h-80 flex-col justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#0e3478] via-[#102c65] to-[#07152e] p-7 text-white" style={bannerDraft.imageUrl.startsWith('https://')?{backgroundImage:'linear-gradient(90deg,#061633dc,#0e3478b5),url("'+bannerDraft.imageUrl+'")',backgroundPosition:'center',backgroundSize:'cover'}:undefined}><span className="text-xs font-black tracking-widest text-orange-300">{bannerDraft.eyebrow}</span><h4 className="mt-4 text-3xl font-black leading-tight">{bannerDraft.title} <span className="text-orange-400">{bannerDraft.highlight}</span></h4><p className="mt-4 text-sm leading-6 text-blue-100">{bannerDraft.description}</p></div><p className="mt-3 text-xs leading-5 text-slate-500">O banner personalizado é salvo no localStorage. Para editar de qualquer dispositivo e publicar globalmente, será necessário um backend com autenticação administrativa e armazenamento de imagens.</p></div>
+        </div>
         <div className="grid gap-4 sm:grid-cols-3">{[{name:'Cupons disponíveis',value:String(coupons.length),icon:Gift},{name:'Pedidos com cupom',value:String(sales.filter(s=>s.couponCode).length),icon:ShoppingBag},{name:'Vendas com cupom (demo)',value:money(sales.filter(s=>s.couponCode).reduce((n,s)=>n+s.total,0)),icon:Wallet}].map(({name,value,icon:Icon})=><article key={name} className="rounded-xl border bg-white p-5"><div className="flex items-center gap-2 text-sm font-semibold text-slate-500"><Icon size={19} className="text-orange-600"/>{name}</div><p className="mt-3 text-2xl font-black">{value}</p></article>)}</div>
         <h3 className="mt-8 mb-4 text-lg font-black">Cupons ativos no simulador</h3><div className="grid gap-4 md:grid-cols-2">{coupons.map(c=><article key={c.code} className="rounded-2xl border-2 border-dashed border-orange-200 bg-white p-6"><div className="flex items-center justify-between"><span className="text-xl font-black tracking-wider text-orange-600">{c.code}</span><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Disponível</span></div><h4 className="mt-3 font-bold">{c.label}</h4><p className="mt-2 text-sm text-slate-600">{c.description}</p><div className="mt-4 flex flex-wrap gap-2 text-xs"><span className="rounded-lg bg-slate-100 px-3 py-2">Compra mínima: {money(c.minSubtotal)}</span><span className="rounded-lg bg-slate-100 px-3 py-2">Uso nos pedidos: {sales.filter(s=>s.couponCode===c.code).length}</span></div></article>)}</div>
         <div className="mt-7 rounded-xl border border-orange-200 bg-orange-50 p-5 text-sm leading-6 text-orange-900">As regras dos cupons são definidas no módulo de promoções do projeto. Para uma loja real, campanhas exigem banco de dados, limites por usuário, expiração e auditoria no servidor.</div>
