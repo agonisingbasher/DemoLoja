@@ -1,7 +1,7 @@
 import { Check, CheckCircle2, ChevronDown, Clock3, FileClock, FileText, Package, PackageCheck, Truck, XCircle } from 'lucide-react';
 import type { DemoSale } from './AdminPanel';
 import { getTrackingProgress, trackingStages } from '../lib/orderTracking';
-import { money } from '../lib/promotions';
+import { dateLocale, money } from '../lib/promotions';
 
 type Props = { order: DemoSale; expanded: boolean; onToggle: () => void; now: number };
 const icons = [CheckCircle2, Package, FileClock, FileText, PackageCheck, Truck, Check] as const;
@@ -19,7 +19,7 @@ export function OrderTracking({order, expanded, onToggle, now}:Props) {
           <strong className="text-lg text-slate-950">Pedido {order.id}</strong>
           <span className={'rounded-full px-3 py-1 text-xs font-black '+(cancelled?'bg-rose-50 text-rose-700':index===6?'bg-emerald-50 text-emerald-700':'bg-orange-50 text-orange-700')}>{current}</span>
         </div>
-        <p className="mt-2 text-xs text-slate-500">Realizado em {new Date(order.date).toLocaleString('pt-BR')} · Pedido de demonstração</p>
+        <p className="mt-2 text-xs text-slate-500">Realizado em {new Date(order.date).toLocaleString(dateLocale())} · Pedido de demonstração</p>
         <p className="mt-3 text-sm font-semibold text-slate-600">{currentNote}</p>
         <p className="mt-2 flex items-center gap-2 text-xs text-slate-500"><FileClock size={15}/> {invoiceStatus}</p>
       </div>
