@@ -1,4 +1,4 @@
-import { Check, CheckCircle2, ChevronDown, Circle, Clock3, FileClock, FileText, Package, PackageCheck, Truck, XCircle } from 'lucide-react';
+import { Check, CheckCircle2, ChevronDown, Clock3, FileClock, FileText, Package, PackageCheck, Truck, XCircle } from 'lucide-react';
 import type { DemoSale } from './AdminPanel';
 import { getTrackingProgress, trackingStages } from '../lib/orderTracking';
 import { money } from '../lib/promotions';
