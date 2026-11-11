@@ -435,7 +435,7 @@ export default function App() {
               <div className="flex justify-between text-sm text-slate-600"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
               <div className="flex justify-between text-sm text-slate-600"><span>Entrega simulada</span><span>{shipping === 0 ? 'Grátis' : formatPrice(shipping)}</span></div>
               {discount>0&&<div className="flex justify-between text-sm font-bold text-emerald-700"><span>Cupom ({appliedCoupon})</span><span>-{formatPrice(discount)}</span></div>}
-              {pixDiscount>0&&<div className="flex justify-between text-sm font-bold text-emerald-700"><span>Desconto Pix demo</span><span>-{formatPrice(pixDiscount)}</span></div>
+              {pixDiscount>0&&<div className="flex justify-between text-sm font-bold text-emerald-700"><span>Desconto Pix demo</span><span>-{formatPrice(pixDiscount)}</span></div>}
               {subtotal > 0 && subtotal < 499 && <p className="text-xs text-emerald-600">Faltam {formatPrice(499 - subtotal)} para ganhar frete grátis.</p>}
               <div className="flex justify-between border-t border-slate-100 pt-3 text-lg font-black text-slate-900"><span>Total</span><span>{formatPrice(total)}</span></div>
               <button onClick={()=>setCouponsOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 py-2.5 text-sm font-bold text-orange-700 hover:bg-orange-100"><Gift size={17}/> Ver cupons disponíveis</button>
