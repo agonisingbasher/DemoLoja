@@ -1,8 +1,9 @@
 import { Bell, ChevronDown, Cpu, Gift, Heart, LayoutDashboard, MapPin, Menu, Search, ShoppingCart, UserRound, X, Zap } from 'lucide-react';
 import { useState } from 'react';
 import type { AccountProfile } from '../lib/customerAccount';
+import { LanguageSwitcher, useLocale } from '../i18n';
 
-type AccountTab='profile'|'address'|'orders';
+type AccountTab='profile'|'address'|'orders'|'security';
 type Props={
   onCartClick:()=>void;cartItemsCount:number;onLoginClick:()=>void;
   searchTerm:string;onSearchChange:(value:string)=>void;
@@ -11,6 +12,7 @@ type Props={
   account:AccountProfile|null;onAccountClick:(tab?:AccountTab)=>void;
 };
 export const Header=({onCartClick,cartItemsCount,onLoginClick,searchTerm,onSearchChange,onBuilderClick,onCouponsClick,onNotificationsClick,onFavoritesClick,favoritesCount,account,onAccountClick}:Props)=>{
+  const {locale}=useLocale();
   const [open,setOpen]=useState(false);
   const [accountMenu,setAccountMenu]=useState(false);
   const searchBox=()=> <label className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm lg:max-w-[505px]"><Search size={20} className="shrink-0 text-slate-400"/><input type="search" aria-label="Buscar produtos" placeholder="Busque consoles, periféricos, peças..." value={searchTerm} onChange={e=>onSearchChange(e.target.value)} className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none"/>{searchTerm&&<button onClick={()=>onSearchChange('')} aria-label="Limpar busca" className="text-slate-500"><X size={16}/></button>}</label>;
@@ -21,7 +23,8 @@ export const Header=({onCartClick,cartItemsCount,onLoginClick,searchTerm,onSearc
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-5 gap-y-2 px-4 py-2 text-xs">
         <button onClick={()=>onAccountClick('address')} className="inline-flex items-center gap-2 font-bold hover:text-white"><MapPin size={15} className="text-orange-400"/>{account?.address?.city?'Entregar em '+account.address.city+' / '+account.address.state:'Cadastre seu endereço de entrega'} <ChevronDown size={13}/></button>
         <span className="hidden font-semibold text-slate-400 sm:inline">TechStore · E-commerce de demonstração · Nenhuma cobrança real</span>
-        <a href="https://agonisingbasher.github.io/personal-website/?lang=pt-BR" target="_blank" rel="noopener noreferrer" className="font-bold text-orange-300 hover:text-orange-100">Conheça o desenvolvedor ↗</a>
+        <LanguageSwitcher inline/>
+        <a href={'https://agonisingbasher.github.io/personal-website/?lang='+locale} target="_blank" rel="noopener noreferrer" className="font-bold text-orange-300 hover:text-orange-100">Conheça o desenvolvedor ↗</a>
       </div>
     </div>
     <div className="bg-[#0c285a] text-white">
