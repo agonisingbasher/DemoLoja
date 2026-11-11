@@ -6,6 +6,7 @@ import { profileFromUser, type AccountProfile, type DeliveryAddress } from '../l
 import type { DemoSale } from './AdminPanel';
 import { OrderTracking } from './OrderTracking';
 import { Footer } from './Footer';
+import { translate, useLocale } from '../i18n';
 
 type Props = { account:AccountProfile|null;orders:DemoSale[];initialTab?:ProfileTab;
   onBack:()=>void;onChange:(profile:AccountProfile|null)=>void;
@@ -17,6 +18,7 @@ const cepMask=(s:string)=>digits(s).slice(0,8).replace(/^(\d{5})(\d)/,'$1-$2');
 type AuthTab='login'|'register';
 type ProfileTab='profile'|'address'|'orders'|'security';
 export function AccountPage({account,orders,initialTab='profile',onBack,onChange,onInfoClick}:Props){
+  const {locale}=useLocale();
   const [authTab,setAuthTab]=useState<AuthTab>('login');
   const [profileTab,setProfileTab]=useState<ProfileTab>(initialTab);
   const [name,setName]=useState(account?.name||'');
@@ -159,7 +161,7 @@ export function AccountPage({account,orders,initialTab='profile',onBack,onChange
     <div className="bg-[#08152e] p-2 text-center text-xs text-slate-200">TechStore · Identidade demonstrativa · Não forneça dados pessoais reais no modo de teste</div>
     <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0c285a] text-white"><div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4"><button onClick={onBack} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold hover:bg-white/10"><ArrowLeft size={18}/> Voltar à loja</button><button onClick={onBack} className="text-xl font-black">Tech<span className="text-orange-400">Store</span></button><span className="hidden items-center gap-2 text-xs font-bold sm:flex"><LockKeyhole size={17}/> Espaço do cliente</span></div></header>
     <main className="mx-auto max-w-6xl px-4 py-10">
-      <div className="mb-8"><p className="text-xs font-black uppercase tracking-widest text-orange-600">Área do cliente</p><h1 className="mt-2 text-3xl font-black sm:text-4xl">{account?'Olá, '+account.name.split(' ')[0]+'!':'Sua conta TechStore'}</h1><p className="mt-2 text-sm leading-6 text-slate-500">{account?'Consulte seu perfil, endereços e pedidos demonstrativos.':'Crie seu perfil, salve um endereço e conheça a experiência de compra personalizada.'}</p></div>
+      <div className="mb-8"><p className="text-xs font-black uppercase tracking-widest text-orange-600">Área do cliente</p><h1 className="mt-2 text-3xl font-black sm:text-4xl">{account?translate('Olá, ',locale)+account.name.split(' ')[0]+'!':translate('Sua conta TechStore',locale)}</h1><p className="mt-2 text-sm leading-6 text-slate-500">{account?'Consulte seu perfil, endereços e pedidos demonstrativos.':'Crie seu perfil, salve um endereço e conheça a experiência de compra personalizada.'}</p></div>
       {!account?<div className="grid items-start gap-6 lg:grid-cols-[1.1fr_.9fr]">
         <section className="rounded-2xl border bg-white p-6 shadow-sm sm:p-8">
           {supabase?<div className="mb-6 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1"><button onClick={()=>{setAuthTab('register');setMessage('');setAccountExists(false);}} className={'rounded-lg px-4 py-3 text-sm font-bold '+(authTab==='register'?'bg-white text-orange-700 shadow-sm':'text-slate-500')}>Criar conta</button><button onClick={()=>{setAuthTab('login');setMessage('');setAccountExists(false);}} className={'rounded-lg px-4 py-3 text-sm font-bold '+(authTab==='login'?'bg-white text-orange-700 shadow-sm':'text-slate-500')}>Entrar</button></div>:null}
