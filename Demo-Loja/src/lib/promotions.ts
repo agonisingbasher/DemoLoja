@@ -26,5 +26,6 @@ const currencyLocale=()=>{
   }catch{/* Storage may be disabled */}
   return 'pt-BR';
 };
+export const dateLocale=currencyLocale;
 export const money = (n: number) => n.toLocaleString(currencyLocale(), {style:'currency',currency:'BRL'});
 export const installments = (amount:number, count=10) => money(amount/count);
